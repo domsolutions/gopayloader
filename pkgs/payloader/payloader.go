@@ -45,10 +45,8 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	reqsPerWorker := p.config.Reqs / int64(p.config.Conns)
 	remainderReqs := p.config.Reqs % int64(p.config.Conns)
 
-	workers := make([]worker.Worker, p.config.Conns)
-
 	workersComplete := &sync.WaitGroup{}
-	workersComplete.Add(p.config.Conns)
+	workersComplete.Add(int(p.config.Conns))
 
 	startTrigger := &sync.WaitGroup{}
 	startTrigger.Add(1)
@@ -58,7 +56,9 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 		reqEvery = time.Duration(int64(p.config.Duration) / reqsPerWorker)
 	}
 
-	for conn := 0; conn < p.config.Conns; conn++ {
+	workers := make([]worker.Worker, p.config.Conns)
+	var conn uint
+	for conn = 0; conn < p.config.Conns; conn++ {
 		c := &worker.Config{
 			ReqURI:       p.config.ReqURI,
 			KeepAlive:    p.config.KeepAlive,
@@ -78,7 +78,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 		if err != nil {
 			return nil, err
 		}
-		workers = append(workers, w)
+		workers[conn] = w
 		go w.Run(workersComplete)
 	}
 
@@ -96,6 +96,7 @@ func (p *PayLoader) getResults(workers []worker.Worker) (*Results, error) {
 		StartTime: p.startTime,
 		StopTime:  p.stopTime,
 		TotalTime: p.startTime.Sub(p.stopTime),
+		Responses: make(map[worker.ResponseCode]int64),
 	}
 
 	for _, w := range workers {

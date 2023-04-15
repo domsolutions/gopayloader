@@ -14,13 +14,13 @@ type Config struct {
 	ReqURI    string
 	KeepAlive bool
 	Reqs      int64
-	Conns     int
+	Conns     uint
 	Duration  time.Duration
 	MTLSKey   string
 	MTLSCert  string
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, keepAlive bool, reqs int64, conns int, totalTime time.Duration) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, keepAlive bool, reqs int64, conns uint, totalTime time.Duration) *Config {
 	return &Config{
 		Ctx:       ctx,
 		ReqURI:    reqURI,
@@ -33,12 +33,19 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, keepAlive 
 	}
 }
 
+var (
+	errConnLimit = errors.New("connections can't be more than requests")
+)
+
 func (c *Config) Validate() error {
 	if _, err := url.ParseRequestURI(c.ReqURI); err != nil {
 		return fmt.Errorf("config: invalid request uri, got error %v", err)
 	}
-	if int64(c.Conns) > c.Reqs {
-		return errors.New("connections can't be more than requests")
+	if int64(c.Conns) > c.Reqs && c.Duration == 0 {
+		return errConnLimit
+	}
+	if int64(c.Conns) > c.Reqs && c.Reqs != 0 && c.Duration != 0 {
+		return errConnLimit
 	}
 	if c.MTLSKey != "" {
 		_, err := os.OpenFile(c.MTLSKey, os.O_RDONLY, os.ModePerm)

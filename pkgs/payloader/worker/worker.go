@@ -94,6 +94,9 @@ func NewWorker(config *Config) (Worker, error) {
 	if config.Until != 0 {
 		if config.Reqs == 0 {
 			return &WorkerFixedTime{&WorkerBase{
+				stats: Stats{
+					Responses: make(map[ResponseCode]int64),
+				},
 				config: config,
 				client: client,
 			}}, nil
@@ -101,18 +104,24 @@ func NewWorker(config *Config) (Worker, error) {
 		return &WorkerFixedTimeRequests{&WorkerBase{
 			config: config,
 			client: client,
+			stats: Stats{
+				Responses: make(map[ResponseCode]int64),
+			},
 		}}, nil
 	}
 
 	return &WorkerFixedReqs{&WorkerBase{
 		config: config,
 		client: client,
+		stats: Stats{
+			Responses: make(map[ResponseCode]int64),
+		},
 	}}, nil
 }
 
 func (w *WorkerBase) run() {
 	req := requestPool.Get().(*fasthttp.Request)
-	resp := requestPool.Get().(*fasthttp.Response)
+	resp := responsePool.Get().(*fasthttp.Response)
 
 	err := w.process(req, resp)
 	if err != nil {
