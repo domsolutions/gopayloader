@@ -21,9 +21,11 @@ type Config struct {
 	SkipVerify       bool
 	ReadTimeout      time.Duration
 	WriteTimeout     time.Duration
+	Method           string
+	Verbose          bool
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
@@ -36,12 +38,21 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		SkipVerify:       skipVerify,
 		ReadTimeout:      readTimeout,
 		WriteTimeout:     writeTimeout,
+		Method:           method,
+		Verbose:          verbose,
 	}
 }
 
 var (
 	errConnLimit = errors.New("connections can't be more than requests")
 )
+
+var allowedMethods = [4]string{
+	"GET",
+	"PUT",
+	"POST",
+	"DELETE",
+}
 
 func (c *Config) Validate() error {
 	if _, err := url.ParseRequestURI(c.ReqURI); err != nil {
@@ -72,6 +83,10 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if !methodAllowed(c.Method) {
+		return fmt.Errorf("method %s not allowed", c.Method)
+	}
+
 	if c.WriteTimeout == 0 {
 		return errors.New("write timeout is zero")
 	}
@@ -83,4 +98,13 @@ func (c *Config) Validate() error {
 		return errors.New("config: Reqs 0 and Duration 0")
 	}
 	return nil
+}
+
+func methodAllowed(method string) bool {
+	for _, m := range allowedMethods {
+		if method == m {
+			return true
+		}
+	}
+	return false
 }

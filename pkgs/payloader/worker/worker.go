@@ -28,6 +28,8 @@ type WorkerBase struct {
 	config *Config
 	client *fasthttp.HostClient
 	stats  Stats
+	req    *fasthttp.Request
+	resp   *fasthttp.Response
 }
 
 type Config struct {
@@ -43,6 +45,8 @@ type Config struct {
 	ReqEvery         time.Duration
 	ReadTimeout      time.Duration
 	WriteTimeout     time.Duration
+	Method           string
+	Verbose          bool
 }
 
 type ResponseCode int
@@ -97,6 +101,9 @@ func NewWorker(config *Config) (Worker, error) {
 			if config.DisableKeepAlive {
 				req.Header.Add(fasthttp.HeaderConnection, "close")
 			}
+			if config.Method != "GET" {
+				req.Header.SetMethodBytes([]byte(config.Method))
+			}
 			req.SetRequestURI(config.ReqURI)
 			return req
 		}}
@@ -134,10 +141,10 @@ func NewWorker(config *Config) (Worker, error) {
 }
 
 func (w *WorkerBase) run() {
-	req := requestPool.Get().(*fasthttp.Request)
-	resp := responsePool.Get().(*fasthttp.Response)
+	w.req = requestPool.Get().(*fasthttp.Request)
+	w.resp = responsePool.Get().(*fasthttp.Response)
 
-	err := w.process(req, resp)
+	err := w.process()
 	if err != nil {
 		if _, ok := w.stats.Errors[err.Error()]; ok {
 			w.stats.Errors[err.Error()]++
@@ -150,25 +157,25 @@ func (w *WorkerBase) run() {
 	w.stats.CompletedReqs++
 }
 
-func (w *WorkerBase) process(req *fasthttp.Request, resp *fasthttp.Response) error {
+func (w *WorkerBase) process() error {
 	begin := time.Now().UnixNano()
 
 	defer func() {
-		requestPool.Put(req)
-		responsePool.Put(resp)
+		requestPool.Put(w.req)
+		responsePool.Put(w.resp)
 		w.stats.Reqs = append(w.stats.Reqs, ReqLatency{begin, time.Now().UnixNano()})
 	}()
 
-	if err := w.client.Do(req, resp); err != nil {
+	if err := w.client.Do(w.req, w.resp); err != nil {
 		return err
 	}
 
-	_, ok := w.stats.Responses[(ResponseCode(resp.StatusCode()))]
+	_, ok := w.stats.Responses[(ResponseCode(w.resp.StatusCode()))]
 	if ok {
-		w.stats.Responses[(ResponseCode(resp.StatusCode()))]++
+		w.stats.Responses[(ResponseCode(w.resp.StatusCode()))]++
 		return nil
 	}
-	w.stats.Responses[(ResponseCode(resp.StatusCode()))] = 1
+	w.stats.Responses[(ResponseCode(w.resp.StatusCode()))] = 1
 	return nil
 }
 

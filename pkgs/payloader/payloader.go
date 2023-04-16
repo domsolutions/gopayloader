@@ -84,6 +84,8 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			ReqEvery:         reqEvery,
 			ReadTimeout:      p.config.ReadTimeout,
 			WriteTimeout:     p.config.WriteTimeout,
+			Method:           p.config.Method,
+			Verbose:          p.config.Verbose,
 		}
 		if conn == 0 {
 			c.Reqs += remainderReqs

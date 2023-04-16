@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	argMethod       = "method"
 	argConnections  = "connections"
 	argRequests     = "requests"
 	argKeepAlive    = "disable-keep-alive"
@@ -17,9 +18,11 @@ const (
 	argMTLSCert     = "mtls-cert"
 	argReadTimeout  = "read-timeout"
 	argWriteTimeout = "write-timeout"
+	argVerbose      = "verbose"
 )
 
 var (
+	method           string
 	reqURI           string
 	mTLSCert         string
 	mTLSKey          string
@@ -30,6 +33,7 @@ var (
 	conns            uint
 	reqs             int64
 	skipVerify       bool
+	verbose          bool
 )
 
 var runCmd = &cobra.Command{
@@ -37,24 +41,34 @@ var runCmd = &cobra.Command{
 	Short: "Load test HTTP/S server",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return wrapper.RunGoPayLoader(reqURI, mTLSCert, mTLSKey, disableKeepAlive, reqs, conns, duration, skipVerify, readTimeout, writeTimeout)
+		return wrapper.RunGoPayLoader(reqURI,
+			mTLSCert,
+			mTLSKey,
+			disableKeepAlive,
+			reqs,
+			conns,
+			duration,
+			skipVerify,
+			readTimeout,
+			writeTimeout,
+			method,
+			verbose)
 	},
 }
 
 func init() {
 	runCmd.Flags().Int64VarP(&reqs, argRequests, "r", 0, "Number of requests")
 	runCmd.Flags().UintVarP(&conns, argConnections, "c", 1, "Number of simultaneous connections")
-
 	runCmd.Flags().BoolVarP(&disableKeepAlive, argKeepAlive, "k", false, "Disable keep-alive connections")
 	runCmd.Flags().BoolVar(&skipVerify, argVerifySigner, true, "Verify SSL cert signer")
 	runCmd.Flags().DurationVarP(&duration, argTime, "t", 0, "Execution time window, if used with -r will uniformly distribute reqs within time window, without -r reqs are unlimited")
-
 	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 5*time.Second, "Read timeout")
 	runCmd.Flags().DurationVar(&writeTimeout, argWriteTimeout, 5*time.Second, "Write timeout")
-
 	runCmd.Flags().StringVar(&reqURI, argHost, "", "Request URI to run load against")
 	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
+	runCmd.Flags().StringVarP(&method, argMethod, "m", "GET", "mTLS cert private key path")
+	runCmd.Flags().BoolVarP(&verbose, argVerbose, "v", false, "verbose - slows down RPS")
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
 
