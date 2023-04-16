@@ -10,26 +10,32 @@ import (
 )
 
 type Config struct {
-	Ctx       context.Context
-	ReqURI    string
-	KeepAlive bool
-	Reqs      int64
-	Conns     uint
-	Duration  time.Duration
-	MTLSKey   string
-	MTLSCert  string
+	Ctx              context.Context
+	ReqURI           string
+	DisableKeepAlive bool
+	Reqs             int64
+	Conns            uint
+	Duration         time.Duration
+	MTLSKey          string
+	MTLSCert         string
+	SkipVerify       bool
+	ReadTimeout      time.Duration
+	WriteTimeout     time.Duration
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, keepAlive bool, reqs int64, conns uint, totalTime time.Duration) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration) *Config {
 	return &Config{
-		Ctx:       ctx,
-		ReqURI:    reqURI,
-		MTLSKey:   mTLSKey,
-		MTLSCert:  mTLScert,
-		KeepAlive: keepAlive,
-		Reqs:      reqs,
-		Conns:     conns,
-		Duration:  totalTime,
+		Ctx:              ctx,
+		ReqURI:           reqURI,
+		MTLSKey:          mTLSKey,
+		MTLSCert:         mTLScert,
+		DisableKeepAlive: disableKeepAlive,
+		Reqs:             reqs,
+		Conns:            conns,
+		Duration:         totalTime,
+		SkipVerify:       skipVerify,
+		ReadTimeout:      readTimeout,
+		WriteTimeout:     writeTimeout,
 	}
 }
 
@@ -64,6 +70,13 @@ func (c *Config) Validate() error {
 			}
 			return fmt.Errorf("config: mTLS cert error checking file exists; %v", err)
 		}
+	}
+
+	if c.WriteTimeout == 0 {
+		return errors.New("write timeout is zero")
+	}
+	if c.ReadTimeout == 0 {
+		return errors.New("read timeout is zero")
 	}
 
 	if c.Reqs == 0 && c.Duration == 0 {

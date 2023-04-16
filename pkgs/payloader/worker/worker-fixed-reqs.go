@@ -23,5 +23,4 @@ func (w *WorkerFixedReqs) Run(wg *sync.WaitGroup) {
 			w.run()
 		}
 	}
-
 }

@@ -14,6 +14,11 @@ var (
 	responsePool *sync.Pool
 )
 
+const (
+	ReqBegin = 0
+	ReqEnd   = 1
+)
+
 type Worker interface {
 	Run(wg *sync.WaitGroup)
 	Stats() Stats
@@ -26,29 +31,35 @@ type WorkerBase struct {
 }
 
 type Config struct {
-	ReqURI       string
-	KeepAlive    bool
-	MTLSKey      string
-	MTLSCert     string
-	Reqs         int64
-	Ctx          context.Context
-	StartTrigger *sync.WaitGroup
-	Until        time.Duration
-	ReqEvery     time.Duration
+	ReqURI           string
+	DisableKeepAlive bool
+	SkipVerify       bool
+	MTLSKey          string
+	MTLSCert         string
+	Reqs             int64
+	Ctx              context.Context
+	StartTrigger     *sync.WaitGroup
+	Until            time.Duration
+	ReqEvery         time.Duration
+	ReadTimeout      time.Duration
+	WriteTimeout     time.Duration
 }
 
 type ResponseCode int
 
+type ReqLatency [2]int64
+
 type Stats struct {
 	CompletedReqs int64
 	FailedReqs    int64
-	TimePerReq    []int64
+	Reqs          []ReqLatency
 	Responses     map[ResponseCode]int64
+	Errors        map[string]uint
 }
 
 func NewWorker(config *Config) (Worker, error) {
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: config.SkipVerify,
 	}
 
 	if config.MTLSCert != "" && config.MTLSKey != "" {
@@ -65,16 +76,13 @@ func NewWorker(config *Config) (Worker, error) {
 	}
 
 	client := &fasthttp.HostClient{
-		Addr:     u.Host,
-		IsTLS:    u.Scheme == "https",
-		MaxConns: 1,
-		//ReadTimeout:                   opts.timeout,
-		//WriteTimeout:                  opts.timeout,
+		Addr:                          u.Host,
+		IsTLS:                         u.Scheme == "https",
+		MaxConns:                      1,
+		ReadTimeout:                   config.ReadTimeout,
+		WriteTimeout:                  config.WriteTimeout,
 		DisableHeaderNamesNormalizing: true,
 		TLSConfig:                     tlsConfig,
-		//Dial: fasthttpDialFunc(
-		//	opts.bytesRead, opts.bytesWritten,
-		//),
 	}
 
 	if responsePool == nil {
@@ -86,6 +94,9 @@ func NewWorker(config *Config) (Worker, error) {
 	if requestPool == nil {
 		requestPool = &sync.Pool{New: func() any {
 			req := &fasthttp.Request{}
+			if config.DisableKeepAlive {
+				req.Header.Add(fasthttp.HeaderConnection, "close")
+			}
 			req.SetRequestURI(config.ReqURI)
 			return req
 		}}
@@ -96,6 +107,7 @@ func NewWorker(config *Config) (Worker, error) {
 			return &WorkerFixedTime{&WorkerBase{
 				stats: Stats{
 					Responses: make(map[ResponseCode]int64),
+					Errors:    make(map[string]uint),
 				},
 				config: config,
 				client: client,
@@ -106,6 +118,7 @@ func NewWorker(config *Config) (Worker, error) {
 			client: client,
 			stats: Stats{
 				Responses: make(map[ResponseCode]int64),
+				Errors:    make(map[string]uint),
 			},
 		}}, nil
 	}
@@ -115,6 +128,7 @@ func NewWorker(config *Config) (Worker, error) {
 		client: client,
 		stats: Stats{
 			Responses: make(map[ResponseCode]int64),
+			Errors:    make(map[string]uint),
 		},
 	}}, nil
 }
@@ -125,7 +139,11 @@ func (w *WorkerBase) run() {
 
 	err := w.process(req, resp)
 	if err != nil {
-		// TODO store error?
+		if _, ok := w.stats.Errors[err.Error()]; ok {
+			w.stats.Errors[err.Error()]++
+		} else {
+			w.stats.Errors[err.Error()] = 1
+		}
 		w.stats.FailedReqs++
 		return
 	}
@@ -133,23 +151,24 @@ func (w *WorkerBase) run() {
 }
 
 func (w *WorkerBase) process(req *fasthttp.Request, resp *fasthttp.Response) error {
-	begin := time.Now()
+	begin := time.Now().UnixNano()
 
 	defer func() {
 		requestPool.Put(req)
 		responsePool.Put(resp)
-		w.stats.TimePerReq = append(w.stats.TimePerReq, time.Now().Sub(begin).Nanoseconds())
+		w.stats.Reqs = append(w.stats.Reqs, ReqLatency{begin, time.Now().UnixNano()})
 	}()
 
 	if err := w.client.Do(req, resp); err != nil {
 		return err
 	}
-	if _, ok := w.stats.Responses[ResponseCode(resp.StatusCode())]; ok {
-		w.stats.Responses[ResponseCode(resp.StatusCode())]++
-	} else {
-		w.stats.Responses[ResponseCode(resp.StatusCode())] = 1
-	}
 
+	_, ok := w.stats.Responses[(ResponseCode(resp.StatusCode()))]
+	if ok {
+		w.stats.Responses[(ResponseCode(resp.StatusCode()))]++
+		return nil
+	}
+	w.stats.Responses[(ResponseCode(resp.StatusCode()))] = 1
 	return nil
 }
 

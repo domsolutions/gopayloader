@@ -14,15 +14,28 @@ type PayLoader struct {
 }
 
 type Results struct {
-	TotalTime                time.Duration
-	StartTime                time.Time
-	StopTime                 time.Time
-	CompletedReqs            int64
-	FailedReqs               int64
-	TimePerReqNanoseconds    []int64
-	AverageTimePerReqSeconds time.Duration
-	MeanRPS                  float64
-	Responses                map[worker.ResponseCode]int64
+	Total         time.Duration
+	Start         time.Time
+	End           time.Time
+	CompletedReqs int64
+	FailedReqs    int64
+	LatencyPerReq []time.Duration
+	RPS           RPS
+	Latency       Latency
+	Responses     map[worker.ResponseCode]int64
+	Errors        map[string]uint
+}
+
+type RPS struct {
+	Average float64
+	Max     uint64
+	Min     uint64
+}
+
+type Latency struct {
+	Average time.Duration
+	Max     time.Duration
+	Min     time.Duration
 }
 
 func NewPayLoader(config *config.Config) *PayLoader {
@@ -60,15 +73,17 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	var conn uint
 	for conn = 0; conn < p.config.Conns; conn++ {
 		c := &worker.Config{
-			ReqURI:       p.config.ReqURI,
-			KeepAlive:    p.config.KeepAlive,
-			MTLSKey:      p.config.MTLSKey,
-			MTLSCert:     p.config.MTLSCert,
-			Reqs:         reqsPerWorker,
-			Ctx:          p.config.Ctx,
-			StartTrigger: startTrigger,
-			Until:        p.config.Duration,
-			ReqEvery:     reqEvery,
+			ReqURI:           p.config.ReqURI,
+			DisableKeepAlive: p.config.DisableKeepAlive,
+			MTLSKey:          p.config.MTLSKey,
+			MTLSCert:         p.config.MTLSCert,
+			Reqs:             reqsPerWorker,
+			Ctx:              p.config.Ctx,
+			StartTrigger:     startTrigger,
+			Until:            p.config.Duration,
+			ReqEvery:         reqEvery,
+			ReadTimeout:      p.config.ReadTimeout,
+			WriteTimeout:     p.config.WriteTimeout,
 		}
 		if conn == 0 {
 			c.Reqs += remainderReqs
@@ -93,34 +108,92 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 
 func (p *PayLoader) getResults(workers []worker.Worker) (*Results, error) {
 	results := &Results{
-		StartTime: p.startTime,
-		StopTime:  p.stopTime,
-		TotalTime: p.startTime.Sub(p.stopTime),
+		Start:     p.startTime,
+		End:       p.stopTime,
+		Total:     p.stopTime.Sub(p.startTime),
 		Responses: make(map[worker.ResponseCode]int64),
+		Errors:    make(map[string]uint),
 	}
 
 	for _, w := range workers {
 		stats := w.Stats()
 		results.CompletedReqs += stats.CompletedReqs
 		results.FailedReqs += stats.FailedReqs
-		results.TimePerReqNanoseconds = append(results.TimePerReqNanoseconds, stats.TimePerReq...)
 
-		for code, hit := range stats.Responses {
-			if _, ok := results.Responses[code]; ok {
-				results.Responses[code] += hit
+		for _, l := range stats.Reqs {
+			results.LatencyPerReq = append(results.LatencyPerReq, time.Duration(l[1]-l[0]))
+		}
+
+		for err, count := range stats.Errors {
+			if _, ok := results.Errors[err]; ok {
+				results.Errors[err] += count
 			} else {
-				results.Responses[code] = hit
+				results.Errors[err] = count
+			}
+		}
+
+		for code, val := range stats.Responses {
+			if _, ok := results.Responses[code]; ok {
+				results.Responses[code] += val
+			} else {
+				results.Responses[code] = val
+			}
+		}
+
+	}
+
+	// TODO optimise 3 loops
+
+	reqsPerSecond := make(map[time.Duration]uint64)
+	for t := results.Start; t.Before(results.End); t = t.Add(time.Second) {
+		begin := t.UnixNano()
+		end := t.Add(time.Second).UnixNano()
+
+		for _, w := range workers {
+			stats := w.Stats()
+			for _, l := range stats.Reqs {
+				if l[worker.ReqBegin] >= begin && l[worker.ReqEnd] <= end {
+					if _, ok := reqsPerSecond[time.Duration(t.Unix())]; ok {
+						reqsPerSecond[time.Duration(t.Unix())]++
+					} else {
+						reqsPerSecond[time.Duration(t.Unix())] = 1
+					}
+				}
 			}
 		}
 	}
 
-	var totalLatency int64 = 0
-	for _, r := range results.TimePerReqNanoseconds {
-		totalLatency += r
-	}
-	results.AverageTimePerReqSeconds = time.Duration(totalLatency/int64(len(results.TimePerReqNanoseconds))) / time.Second
+	if len(reqsPerSecond) > 0 {
+		results.RPS.Min = reqsPerSecond[0]
 
-	results.MeanRPS = float64(results.CompletedReqs) / float64(results.TotalTime/time.Second)
+		for _, val := range reqsPerSecond {
+			if val > results.RPS.Max {
+				results.RPS.Max = val
+			}
+			if val < results.RPS.Min {
+				results.RPS.Min = val
+			}
+		}
+
+		results.RPS.Average = float64(results.CompletedReqs) / (float64(results.Total) / float64(time.Second))
+	}
+
+	if len(results.LatencyPerReq) > 0 {
+		var totalLatency time.Duration = 0
+		results.Latency.Min = results.LatencyPerReq[0]
+
+		for _, r := range results.LatencyPerReq {
+			if r > results.Latency.Max {
+				results.Latency.Max = r
+			}
+			if r < results.Latency.Min {
+				results.Latency.Min = r
+			}
+			totalLatency += r
+		}
+
+		results.Latency.Average = totalLatency / time.Duration(len(results.LatencyPerReq))
+	}
 
 	return results, nil
 }

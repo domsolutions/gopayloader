@@ -2,7 +2,7 @@ package wrapper
 
 import (
 	"context"
-	"fmt"
+	"github.com/domsolutions/gopayloader/pkgs/payloader/output/cli"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,11 +12,11 @@ import (
 	"github.com/domsolutions/gopayloader/pkgs/payloader"
 )
 
-func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, keepAlive bool, reqs int64, conns uint, totalTime time.Duration) error {
+func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	configuration := config.NewConfig(ctx, reqURI, mTLScert, mTLSKey, keepAlive, reqs, conns, totalTime)
+	configuration := config.NewConfig(ctx, reqURI, mTLScert, mTLSKey, disableKeepAlive, reqs, conns, totalTime, skipVerify, readTimeout, writeTimeout)
 	if err := configuration.Validate(); err != nil {
 		return err
 	}
@@ -42,11 +42,15 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, keepAlive bool, reqs int64
 		// user pressed ctrl+c
 		cancel()
 		results := <-resPayLoader
-		fmt.Println(results)
+		if err := cli.Display(results); err != nil {
+			return err
+		}
 	case err := <-errPayLoader:
 		return err
 	case results := <-resPayLoader:
-		fmt.Println(results)
+		if err := cli.Display(results); err != nil {
+			return err
+		}
 	}
 
 	return nil
