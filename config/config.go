@@ -13,7 +13,7 @@ type Config struct {
 	Ctx              context.Context
 	ReqURI           string
 	DisableKeepAlive bool
-	Reqs             int64
+	ReqTarget        int64
 	Conns            uint
 	Duration         time.Duration
 	MTLSKey          string
@@ -23,16 +23,17 @@ type Config struct {
 	WriteTimeout     time.Duration
 	Method           string
 	Verbose          bool
+	Ticker           time.Duration
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
 		MTLSKey:          mTLSKey,
 		MTLSCert:         mTLScert,
 		DisableKeepAlive: disableKeepAlive,
-		Reqs:             reqs,
+		ReqTarget:        reqs,
 		Conns:            conns,
 		Duration:         totalTime,
 		SkipVerify:       skipVerify,
@@ -40,6 +41,7 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		WriteTimeout:     writeTimeout,
 		Method:           method,
 		Verbose:          verbose,
+		Ticker:           ticker,
 	}
 }
 
@@ -58,12 +60,13 @@ func (c *Config) Validate() error {
 	if _, err := url.ParseRequestURI(c.ReqURI); err != nil {
 		return fmt.Errorf("config: invalid request uri, got error %v", err)
 	}
-	if int64(c.Conns) > c.Reqs && c.Duration == 0 {
+	if int64(c.Conns) > c.ReqTarget && c.Duration == 0 {
 		return errConnLimit
 	}
-	if int64(c.Conns) > c.Reqs && c.Reqs != 0 && c.Duration != 0 {
+	if int64(c.Conns) > c.ReqTarget && c.ReqTarget != 0 && c.Duration != 0 {
 		return errConnLimit
 	}
+
 	if c.MTLSKey != "" {
 		_, err := os.OpenFile(c.MTLSKey, os.O_RDONLY, os.ModePerm)
 		if err != nil {
@@ -83,6 +86,10 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if c.Ticker == 0 {
+		return errors.New("ticker value can't be zero")
+	}
+
 	if !methodAllowed(c.Method) {
 		return fmt.Errorf("method %s not allowed", c.Method)
 	}
@@ -94,8 +101,8 @@ func (c *Config) Validate() error {
 		return errors.New("read timeout is zero")
 	}
 
-	if c.Reqs == 0 && c.Duration == 0 {
-		return errors.New("config: Reqs 0 and Duration 0")
+	if c.ReqTarget == 0 && c.Duration == 0 {
+		return errors.New("config: ReqTarget 0 and Duration 0")
 	}
 	return nil
 }

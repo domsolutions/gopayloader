@@ -19,6 +19,7 @@ const (
 	argReadTimeout  = "read-timeout"
 	argWriteTimeout = "write-timeout"
 	argVerbose      = "verbose"
+	argTicker       = "ticker"
 )
 
 var (
@@ -34,6 +35,7 @@ var (
 	reqs             int64
 	skipVerify       bool
 	verbose          bool
+	ticker           time.Duration
 )
 
 var runCmd = &cobra.Command{
@@ -52,7 +54,8 @@ var runCmd = &cobra.Command{
 			readTimeout,
 			writeTimeout,
 			method,
-			verbose)
+			verbose,
+			ticker)
 	},
 }
 
@@ -67,8 +70,9 @@ func init() {
 	runCmd.Flags().StringVar(&reqURI, argHost, "", "Request URI to run load against")
 	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
-	runCmd.Flags().StringVarP(&method, argMethod, "m", "GET", "mTLS cert private key path")
-	runCmd.Flags().BoolVarP(&verbose, argVerbose, "v", false, "verbose - slows down RPS")
+	runCmd.Flags().StringVarP(&method, argMethod, "m", "GET", "request method")
+	runCmd.Flags().BoolVarP(&verbose, argVerbose, "v", false, "verbose - slows down RPS slightly for long running tests")
+	runCmd.Flags().DurationVar(&ticker, argTicker, time.Second, "How often to print results while running in verbose mode")
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
 

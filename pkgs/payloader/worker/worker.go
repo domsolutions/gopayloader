@@ -19,6 +19,8 @@ const (
 	ReqEnd   = 1
 )
 
+type TotalRequestsComplete int64
+
 type Worker interface {
 	Run(wg *sync.WaitGroup)
 	Stats() Stats
@@ -59,6 +61,10 @@ type Stats struct {
 	Reqs          []ReqLatency
 	Responses     map[ResponseCode]int64
 	Errors        map[string]uint
+}
+
+func (c *Config) TimeLimited() bool {
+	return c.Until != 0
 }
 
 func NewWorker(config *Config) (Worker, error) {
@@ -109,35 +115,25 @@ func NewWorker(config *Config) (Worker, error) {
 		}}
 	}
 
-	if config.Until != 0 {
-		if config.Reqs == 0 {
-			return &WorkerFixedTime{&WorkerBase{
-				stats: Stats{
-					Responses: make(map[ResponseCode]int64),
-					Errors:    make(map[string]uint),
-				},
-				config: config,
-				client: client,
-			}}, nil
-		}
-		return &WorkerFixedTimeRequests{&WorkerBase{
-			config: config,
-			client: client,
-			stats: Stats{
-				Responses: make(map[ResponseCode]int64),
-				Errors:    make(map[string]uint),
-			},
-		}}, nil
+	if !config.TimeLimited() {
+		return &WorkerFixedReqs{baseConfig(config, client)}, nil
 	}
 
-	return &WorkerFixedReqs{&WorkerBase{
+	if config.Reqs == 0 {
+		return &WorkerFixedTime{baseConfig(config, client)}, nil
+	}
+	return &WorkerFixedTimeRequests{baseConfig(config, client)}, nil
+}
+
+func baseConfig(config *Config, client *fasthttp.HostClient) *WorkerBase {
+	return &WorkerBase{
 		config: config,
 		client: client,
 		stats: Stats{
 			Responses: make(map[ResponseCode]int64),
 			Errors:    make(map[string]uint),
 		},
-	}}, nil
+	}
 }
 
 func (w *WorkerBase) run() {
@@ -170,12 +166,13 @@ func (w *WorkerBase) process() error {
 		return err
 	}
 
-	_, ok := w.stats.Responses[(ResponseCode(w.resp.StatusCode()))]
+	status := w.resp.StatusCode()
+	_, ok := w.stats.Responses[(ResponseCode(status))]
 	if ok {
-		w.stats.Responses[(ResponseCode(w.resp.StatusCode()))]++
+		w.stats.Responses[(ResponseCode(status))]++
 		return nil
 	}
-	w.stats.Responses[(ResponseCode(w.resp.StatusCode()))] = 1
+	w.stats.Responses[(ResponseCode(status))] = 1
 	return nil
 }
 

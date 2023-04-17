@@ -1,6 +1,8 @@
 package payloader
 
 import (
+	"context"
+	"fmt"
 	"github.com/domsolutions/gopayloader/config"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"sync"
@@ -55,8 +57,8 @@ func (p *PayLoader) startWorkers(wg *sync.WaitGroup) {
 }
 
 func (p *PayLoader) handleReqs() (*Results, error) {
-	reqsPerWorker := p.config.Reqs / int64(p.config.Conns)
-	remainderReqs := p.config.Reqs % int64(p.config.Conns)
+	reqsPerWorker := p.config.ReqTarget / int64(p.config.Conns)
+	remainderReqs := p.config.ReqTarget % int64(p.config.Conns)
 
 	workersComplete := &sync.WaitGroup{}
 	workersComplete.Add(int(p.config.Conns))
@@ -65,11 +67,13 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	startTrigger.Add(1)
 
 	var reqEvery time.Duration
-	if p.config.Duration != 0 && p.config.Reqs != 0 {
+	if p.config.Duration != 0 && p.config.ReqTarget != 0 {
 		reqEvery = time.Duration(int64(p.config.Duration) / reqsPerWorker)
 	}
 
 	workers := make([]worker.Worker, p.config.Conns)
+	//reports := make([]<-chan worker.TotalRequestsComplete, 0)
+
 	var conn uint
 	for conn = 0; conn < p.config.Conns; conn++ {
 		c := &worker.Config{
@@ -95,6 +99,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		workers[conn] = w
 		go w.Run(workersComplete)
 	}
@@ -102,10 +107,52 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	p.startWorkers(startTrigger)
 	p.startTimer()
 
+	ctx, stopResultsPrinter := context.WithCancel(context.Background())
+	defer stopResultsPrinter()
+	if p.config.Verbose {
+		go p.displayProgress(ctx, workers)
+	}
+
 	// wait for reqs to complete
 	workersComplete.Wait()
 	p.stopTimer()
+	if p.config.Verbose {
+		stopResultsPrinter()
+	}
 	return p.getResults(workers)
+}
+
+func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker) {
+	tick := time.NewTicker(p.config.Ticker)
+	var stats worker.Stats
+	var totalSuccess int64 = 0
+	var totalError int64 = 0
+
+	for {
+		select {
+		case <-ctx.Done():
+			// workers finished
+			return
+		case <-p.config.Ctx.Done():
+			// user cancelled
+			return
+		case <-tick.C:
+			totalSuccess = 0
+			totalError = 0
+
+			for _, w := range workers {
+				stats = w.Stats()
+				totalSuccess += stats.CompletedReqs
+				totalError += stats.FailedReqs
+			}
+			if totalSuccess > 0 {
+				fmt.Printf("%d requests successfully complete\n", totalSuccess)
+			}
+			if totalError > 0 {
+				fmt.Printf("%d requests failed\n", totalError)
+			}
+		}
+	}
 }
 
 func (p *PayLoader) getResults(workers []worker.Worker) (*Results, error) {
