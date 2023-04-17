@@ -3,6 +3,7 @@ package wrapper
 import (
 	"context"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/output/cli"
+	"github.com/pterm/pterm"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,13 +13,17 @@ import (
 	"github.com/domsolutions/gopayloader/pkgs/payloader"
 )
 
-func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration) error {
+func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	configuration := config.NewConfig(ctx, reqURI, mTLScert, mTLSKey, disableKeepAlive, reqs, conns, totalTime, skipVerify, readTimeout, writeTimeout, method, verbose, ticker)
+	configuration := config.NewConfig(ctx, reqURI, mTLScert, mTLSKey, disableKeepAlive, reqs, conns, totalTime, skipVerify, readTimeout, writeTimeout, method, verbose, ticker, HTTPV2)
 	if err := configuration.Validate(); err != nil {
 		return err
+	}
+
+	if verbose {
+		pterm.EnableDebugMessages()
 	}
 
 	payload := payloader.NewPayLoader(configuration)

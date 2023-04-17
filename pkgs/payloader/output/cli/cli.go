@@ -20,7 +20,6 @@ func Display(results *payloader.Results) error {
 	if len(results.Errors) > 0 {
 		displayErrors(results.Errors)
 	}
-
 	return nil
 }
 

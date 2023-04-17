@@ -24,9 +24,10 @@ type Config struct {
 	Method           string
 	Verbose          bool
 	Ticker           time.Duration
+	HTTPV2           bool
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
@@ -42,6 +43,7 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		Method:           method,
 		Verbose:          verbose,
 		Ticker:           ticker,
+		HTTPV2: 		  HTTPV2,
 	}
 }
 

@@ -2,9 +2,9 @@ package payloader
 
 import (
 	"context"
-	"fmt"
 	"github.com/domsolutions/gopayloader/config"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
+	"github.com/pterm/pterm"
 	"sync"
 	"time"
 )
@@ -69,10 +69,10 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	var reqEvery time.Duration
 	if p.config.Duration != 0 && p.config.ReqTarget != 0 {
 		reqEvery = time.Duration(int64(p.config.Duration) / reqsPerWorker)
+		pterm.Debug.Printf("Running requests every %s for every %d connection/s\n", reqEvery.String(), int(p.config.Conns))
 	}
 
 	workers := make([]worker.Worker, p.config.Conns)
-	//reports := make([]<-chan worker.TotalRequestsComplete, 0)
 
 	var conn uint
 	for conn = 0; conn < p.config.Conns; conn++ {
@@ -90,6 +90,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			WriteTimeout:     p.config.WriteTimeout,
 			Method:           p.config.Method,
 			Verbose:          p.config.Verbose,
+			HTTPV2:           p.config.HTTPV2,
 		}
 		if conn == 0 {
 			c.Reqs += remainderReqs
@@ -113,8 +114,10 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 		go p.displayProgress(ctx, workers)
 	}
 
-	// wait for reqs to complete
+	pterm.Debug.Println("Waiting for payloads to finish")
 	workersComplete.Wait()
+	pterm.Debug.Println("Payload complete, calculating results")
+
 	p.stopTimer()
 	if p.config.Verbose {
 		stopResultsPrinter()
@@ -146,10 +149,10 @@ func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker
 				totalError += stats.FailedReqs
 			}
 			if totalSuccess > 0 {
-				fmt.Printf("%d requests successfully complete\n", totalSuccess)
+				pterm.Debug.Printf("%d requests successfully complete\n", totalSuccess)
 			}
 			if totalError > 0 {
-				fmt.Printf("%d requests failed\n", totalError)
+				pterm.Debug.Printf("%d requests failed\n", totalError)
 			}
 		}
 	}
@@ -164,6 +167,7 @@ func (p *PayLoader) getResults(workers []worker.Worker) (*Results, error) {
 		Errors:    make(map[string]uint),
 	}
 
+	pterm.Debug.Println("Calculating response code statistics")
 	for _, w := range workers {
 		stats := w.Stats()
 		results.CompletedReqs += stats.CompletedReqs
@@ -192,7 +196,7 @@ func (p *PayLoader) getResults(workers []worker.Worker) (*Results, error) {
 	}
 
 	// TODO optimise 3 loops
-
+	pterm.Debug.Println("Calculating max/min RPS")
 	reqsPerSecond := make(map[time.Duration]uint64)
 	for t := results.Start; t.Before(results.End); t = t.Add(time.Second) {
 		begin := t.UnixNano()
@@ -228,6 +232,8 @@ func (p *PayLoader) getResults(workers []worker.Worker) (*Results, error) {
 	}
 
 	if len(results.LatencyPerReq) > 0 {
+		pterm.Debug.Println("Calculating max/min latency")
+
 		var totalLatency time.Duration = 0
 		results.Latency.Min = results.LatencyPerReq[0]
 

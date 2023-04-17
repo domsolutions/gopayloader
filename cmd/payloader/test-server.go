@@ -1,8 +1,8 @@
 package payloader
 
 import (
-	"github.com/domsolutions/fasthttp"
 	"github.com/spf13/cobra"
+	"github.com/valyala/fasthttp"
 	"log"
 	"strconv"
 	"strings"
@@ -29,47 +29,7 @@ var runServerCmd = &cobra.Command{
 					log.Println(err)
 				}
 			},
-			ErrorHandler:                       nil,
-			HeaderReceived:                     nil,
-			ContinueHandler:                    nil,
-			Name:                               "",
-			Concurrency:                        0,
-			ReadBufferSize:                     0,
-			WriteBufferSize:                    0,
-			ReadTimeout:                        0,
-			WriteTimeout:                       0,
-			IdleTimeout:                        0,
-			MaxConnsPerIP:                      0,
-			MaxRequestsPerConn:                 0,
-			MaxKeepaliveDuration:               0,
-			MaxIdleWorkerDuration:              0,
-			TCPKeepalivePeriod:                 0,
-			MaxRequestBodySize:                 0,
-			DisableKeepalive:                   false,
-			TCPKeepalive:                       true,
-			ReduceMemoryUsage:                  false,
-			GetOnly:                            false,
-			DisablePreParseMultipartForm:       false,
-			LogAllErrors:                       false,
-			SecureErrorLogMessage:              false,
-			DisableHeaderNamesNormalizing:      false,
-			SleepWhenConcurrencyLimitsExceeded: 0,
-			NoDefaultServerHeader:              false,
-			NoDefaultDate:                      false,
-			NoDefaultContentType:               false,
-			KeepHijackedConns:                  false,
-			CloseOnShutdown:                    false,
-			StreamRequestBody:                  false,
-			ConnState:                          nil,
-			Logger:                             nil,
-			TLSConfig:                          nil,
-			FormValueFunc:                      nil,
 		}
-		//}
-		//err := fasthttp.ListenAndServe(addr)
-		//if err != nil {
-		//	return err
-		//}
 
 		if err := server.ListenAndServe(addr); err != nil {
 			return err

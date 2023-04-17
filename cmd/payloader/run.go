@@ -20,6 +20,7 @@ const (
 	argWriteTimeout = "write-timeout"
 	argVerbose      = "verbose"
 	argTicker       = "ticker"
+	argHTTPV2       = "http-v2"
 )
 
 var (
@@ -36,6 +37,7 @@ var (
 	skipVerify       bool
 	verbose          bool
 	ticker           time.Duration
+	HTTPV2           bool
 )
 
 var runCmd = &cobra.Command{
@@ -55,7 +57,8 @@ var runCmd = &cobra.Command{
 			writeTimeout,
 			method,
 			verbose,
-			ticker)
+			ticker,
+			HTTPV2)
 	},
 }
 
@@ -63,6 +66,8 @@ func init() {
 	runCmd.Flags().Int64VarP(&reqs, argRequests, "r", 0, "Number of requests")
 	runCmd.Flags().UintVarP(&conns, argConnections, "c", 1, "Number of simultaneous connections")
 	runCmd.Flags().BoolVarP(&disableKeepAlive, argKeepAlive, "k", false, "Disable keep-alive connections")
+	// TODO test http/2 works - just hangs
+	runCmd.Flags().BoolVar(&HTTPV2, argHTTPV2, false, "Use HTTP/2")
 	runCmd.Flags().BoolVar(&skipVerify, argVerifySigner, true, "Verify SSL cert signer")
 	runCmd.Flags().DurationVarP(&duration, argTime, "t", 0, "Execution time window, if used with -r will uniformly distribute reqs within time window, without -r reqs are unlimited")
 	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 5*time.Second, "Read timeout")
