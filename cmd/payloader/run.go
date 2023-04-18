@@ -21,6 +21,13 @@ const (
 	argVerbose      = "verbose"
 	argTicker       = "ticker"
 	argHTTPV2       = "http-v2"
+	argJWTCert      = "jwt-cert"
+	argJWTKey       = "jwt-key"
+	argJWTSUb       = "jwt-sub"
+	argJWTIss       = "jwt-iss"
+	argJWTAud       = "jwt-aud"
+	argJWTHeader    = "jwt-header"
+	argJWTEnable    = "jwt-enable"
 )
 
 var (
@@ -38,6 +45,13 @@ var (
 	verbose          bool
 	ticker           time.Duration
 	HTTPV2           bool
+	jwtCert          string
+	jwtKey           string
+	jwtSub           string
+	jwtIss           string
+	jwtAud           string
+	jwtHeader        string
+	sendJWT          bool
 )
 
 var runCmd = &cobra.Command{
@@ -58,7 +72,14 @@ var runCmd = &cobra.Command{
 			method,
 			verbose,
 			ticker,
-			HTTPV2)
+			HTTPV2,
+			jwtCert,
+			jwtKey,
+			jwtSub,
+			jwtIss,
+			jwtAud,
+			jwtHeader,
+			sendJWT)
 	},
 }
 
@@ -73,13 +94,25 @@ func init() {
 	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 5*time.Second, "Read timeout")
 	runCmd.Flags().DurationVar(&writeTimeout, argWriteTimeout, 5*time.Second, "Write timeout")
 	runCmd.Flags().StringVar(&reqURI, argHost, "", "Request URI to run load against")
-	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
-	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
 	runCmd.Flags().StringVarP(&method, argMethod, "m", "GET", "request method")
 	runCmd.Flags().BoolVarP(&verbose, argVerbose, "v", false, "verbose - slows down RPS slightly for long running tests")
 	runCmd.Flags().DurationVar(&ticker, argTicker, time.Second, "How often to print results while running in verbose mode")
 
+	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
+	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
+
+	// TODO basic auth, set any header, set host, post body
+
+	runCmd.Flags().StringVar(&jwtCert, argJWTCert, "", "JWT signing cert path")
+	runCmd.Flags().StringVar(&jwtKey, argJWTKey, "", "JWT signing private key path")
+	runCmd.Flags().StringVar(&jwtAud, argJWTAud, "", "JWT audience (aud) claim")
+	runCmd.Flags().StringVar(&jwtIss, argJWTIss, "", "JWT issuer (iss) claim")
+	runCmd.Flags().StringVar(&jwtSub, argJWTSUb, "", "JWT subject (sub) claim")
+	runCmd.Flags().StringVar(&jwtHeader, argJWTHeader, "", "JWT header field name")
+	runCmd.Flags().BoolVar(&sendJWT, argJWTEnable, false, "Send JWTs with requests")
+
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
+	runCmd.MarkFlagsRequiredTogether(argJWTCert, argJWTKey, argJWTEnable)
 
 	if err := runCmd.MarkFlagRequired(argHost); err != nil {
 		panic(err)

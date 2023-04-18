@@ -13,20 +13,21 @@ import (
 	"github.com/domsolutions/gopayloader/pkgs/payloader"
 )
 
-func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool) error {
+func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtCert, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT bool) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	configuration := config.NewConfig(ctx, reqURI, mTLScert, mTLSKey, disableKeepAlive, reqs, conns, totalTime, skipVerify, readTimeout, writeTimeout, method, verbose, ticker, HTTPV2)
-	if err := configuration.Validate(); err != nil {
+	conf := config.NewConfig(ctx, reqURI, mTLScert, mTLSKey, disableKeepAlive, reqs, conns, totalTime, skipVerify, readTimeout, writeTimeout, method, verbose, ticker, HTTPV2, jwtCert, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader, sendJWT)
+	if err := conf.Validate(); err != nil {
 		return err
 	}
 
 	if verbose {
 		pterm.EnableDebugMessages()
+		pterm.Warning.Println("In verbose mode RPS will be slightly lower, especially for long running tests")
 	}
 
-	payload := payloader.NewPayLoader(configuration)
+	payload := payloader.NewPayLoader(conf)
 	errPayLoader := make(chan error)
 	resPayLoader := make(chan *payloader.Results)
 

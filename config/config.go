@@ -25,9 +25,16 @@ type Config struct {
 	Verbose          bool
 	Ticker           time.Duration
 	HTTPV2           bool
+	JwtCert          string
+	JwtKey           string
+	JwtSub           string
+	JwtIss           string
+	JwtAud           string
+	JwtHeader        string
+	SendJWT          bool
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtCert, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT bool) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
@@ -43,7 +50,14 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		Method:           method,
 		Verbose:          verbose,
 		Ticker:           ticker,
-		HTTPV2: 		  HTTPV2,
+		HTTPV2:           HTTPV2,
+		JwtCert:          jwtCert,
+		JwtKey:           jwtKey,
+		JwtSub:           jwtSub,
+		JwtIss:           jwtIss,
+		JwtAud:           jwtAud,
+		JwtHeader:        jwtHeader,
+		SendJWT:          sendJWT,
 	}
 }
 
@@ -85,6 +99,32 @@ func (c *Config) Validate() error {
 				return errors.New("config: mTLS cert does not exist")
 			}
 			return fmt.Errorf("config: mTLS cert error checking file exists; %v", err)
+		}
+	}
+
+	if c.SendJWT {
+		if c.JwtHeader == "" {
+			return errors.New("config: empty jwt header")
+		}
+
+		if c.JwtKey != "" {
+			_, err := os.OpenFile(c.JwtKey, os.O_RDONLY, os.ModePerm)
+			if err != nil {
+				if os.IsNotExist(err) {
+					return errors.New("config: jwt key does not exist")
+				}
+				return fmt.Errorf("config: jwt key error checking file exists; %v", err)
+			}
+		}
+
+		if c.JwtCert != "" {
+			_, err := os.OpenFile(c.JwtCert, os.O_RDONLY, os.ModePerm)
+			if err != nil {
+				if os.IsNotExist(err) {
+					return errors.New("config: jwt cert does not exist")
+				}
+				return fmt.Errorf("config: jwt cert error checking file exists; %v", err)
+			}
 		}
 	}
 
