@@ -28,7 +28,7 @@ type Config struct {
 	SkipVerify       bool
 	MTLSKey          string
 	MTLSCert         string
-	Reqs             int64
+	ReqTarget        int64
 	Ctx              context.Context
 	StartTrigger     *sync.WaitGroup
 	Until            time.Duration
@@ -57,7 +57,7 @@ func (c *Config) TimeLimited() bool {
 }
 
 func (c *Config) UnlimitedReqs() bool {
-	return c.Until != 0 && c.Reqs == 0
+	return c.Until != 0 && c.ReqTarget == 0
 }
 
 func NewWorker(config *Config) (Worker, error) {

@@ -17,6 +17,8 @@ func Display(results *payloader.Results) error {
 	displayLatency(results.Latency)
 	displayResponseCodes(results.Responses)
 
+	// TODO merge into one table?
+
 	if len(results.Errors) > 0 {
 		displayErrors(results.Errors)
 	}

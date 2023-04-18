@@ -5,6 +5,7 @@ import (
 	"github.com/domsolutions/gopayloader/config"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"github.com/pterm/pterm"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -68,7 +69,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 
 	var reqEvery time.Duration
 	if p.config.Duration != 0 && p.config.ReqTarget != 0 {
-		reqEvery = time.Duration(int64(p.config.Duration) / reqsPerWorker)
+		reqEvery = time.Duration(float64(p.config.Duration) / (float64(p.config.ReqTarget) / float64(p.config.Conns)))
 		pterm.Debug.Printf("Running requests every %s for every %d connection/s\n", reqEvery.String(), int(p.config.Conns))
 	}
 
@@ -81,7 +82,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			DisableKeepAlive: p.config.DisableKeepAlive,
 			MTLSKey:          p.config.MTLSKey,
 			MTLSCert:         p.config.MTLSCert,
-			Reqs:             reqsPerWorker,
+			ReqTarget:        reqsPerWorker,
 			Ctx:              p.config.Ctx,
 			StartTrigger:     startTrigger,
 			Until:            p.config.Duration,
@@ -93,7 +94,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			HTTPV2:           p.config.HTTPV2,
 		}
 		if conn == 0 {
-			c.Reqs += remainderReqs
+			c.ReqTarget += remainderReqs
 		}
 
 		w, err := worker.NewWorker(c)
@@ -111,25 +112,55 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	ctx, stopResultsPrinter := context.WithCancel(context.Background())
 	defer stopResultsPrinter()
 	if p.config.Verbose {
-		go p.displayProgress(ctx, workers)
+		go p.displayProgress(ctx, workers, int(p.config.ReqTarget), p.config.Duration)
 	}
 
-	pterm.Debug.Println("Waiting for payloads to finish")
 	workersComplete.Wait()
-	pterm.Debug.Println("Payload complete, calculating results")
+	pterm.Debug.Printf("\nPayload complete, calculating results\n")
 
 	p.stopTimer()
 	if p.config.Verbose {
 		stopResultsPrinter()
 	}
-	return p.getResults(workers)
+
+	plResults := NewPayLoaderResults(p)
+	return plResults.ComputeResults(workers)
 }
 
-func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker) {
+func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker, reqTarget int, endTime time.Duration) {
 	tick := time.NewTicker(p.config.Ticker)
 	var stats worker.Stats
-	var totalSuccess int64 = 0
-	var totalError int64 = 0
+	var prevSuccess int64 = 0
+	var prevError int64 = 0
+	var progress *pterm.ProgressbarPrinter
+
+	displayStats, err := pterm.DefaultArea.Start(
+		pterm.Red(pterm.Sprintf("0 requests failed\n")),
+		pterm.Green(pterm.Sprintf("0 requests successful")))
+	if err != nil {
+		pterm.Error.Printf("Failed to create display stats area, got error; %v \n", err)
+		return
+	}
+
+	defer displayStats.Stop()
+
+	if endTime != 0 {
+		progress, err = pterm.DefaultProgressbar.
+			WithTotal(int(endTime.Seconds())).
+			WithShowElapsedTime().
+			WithElapsedTimeRoundingFactor(time.Second).
+			WithTitle("Sending requests for " + endTime.String()).Start()
+		if err != nil {
+			pterm.Error.Printf("Failed to create progress bar, got error; %v \n", err)
+			return
+		}
+	} else {
+		progress, err = pterm.DefaultProgressbar.WithTotal(reqTarget).WithTitle("Sending " + strconv.Itoa(reqTarget) + " requests").Start()
+		if err != nil {
+			pterm.Error.Printf("Failed to create progress bar, got error; %v \n", err)
+			return
+		}
+	}
 
 	for {
 		select {
@@ -140,117 +171,29 @@ func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker
 			// user cancelled
 			return
 		case <-tick.C:
-			totalSuccess = 0
-			totalError = 0
+			var errs int64 = 0
+			var success int64 = 0
 
 			for _, w := range workers {
 				stats = w.Stats()
-				totalSuccess += stats.CompletedReqs
-				totalError += stats.FailedReqs
+				errs += stats.FailedReqs
+				success += stats.CompletedReqs
 			}
-			if totalSuccess > 0 {
-				pterm.Debug.Printf("%d requests successfully complete\n", totalSuccess)
-			}
-			if totalError > 0 {
-				pterm.Debug.Printf("%d requests failed\n", totalError)
-			}
-		}
-	}
-}
 
-func (p *PayLoader) getResults(workers []worker.Worker) (*Results, error) {
-	results := &Results{
-		Start:     p.startTime,
-		End:       p.stopTime,
-		Total:     p.stopTime.Sub(p.startTime),
-		Responses: make(map[worker.ResponseCode]int64),
-		Errors:    make(map[string]uint),
-	}
+			displayStats.Update(
+				pterm.Red(pterm.Sprintf("%d requests failed\n", errs)),
+				pterm.Green(pterm.Sprintf("%d requests successful", success)))
 
-	pterm.Debug.Println("Calculating response code statistics")
-	for _, w := range workers {
-		stats := w.Stats()
-		results.CompletedReqs += stats.CompletedReqs
-		results.FailedReqs += stats.FailedReqs
-
-		for _, l := range stats.Reqs {
-			results.LatencyPerReq = append(results.LatencyPerReq, time.Duration(l[1]-l[0]))
-		}
-
-		for err, count := range stats.Errors {
-			if _, ok := results.Errors[err]; ok {
-				results.Errors[err] += count
+			if endTime != 0 {
+				progress.Add(int(p.config.Ticker.Seconds()))
 			} else {
-				results.Errors[err] = count
+				progress.Add(int(success-prevSuccess) + int(errs-prevError))
 			}
-		}
 
-		for code, val := range stats.Responses {
-			if _, ok := results.Responses[code]; ok {
-				results.Responses[code] += val
-			} else {
-				results.Responses[code] = val
-			}
-		}
-
-	}
-
-	// TODO optimise 3 loops
-	pterm.Debug.Println("Calculating max/min RPS")
-	reqsPerSecond := make(map[time.Duration]uint64)
-	for t := results.Start; t.Before(results.End); t = t.Add(time.Second) {
-		begin := t.UnixNano()
-		end := t.Add(time.Second).UnixNano()
-
-		for _, w := range workers {
-			stats := w.Stats()
-			for _, l := range stats.Reqs {
-				if l[worker.ReqBegin] >= begin && l[worker.ReqEnd] <= end {
-					if _, ok := reqsPerSecond[time.Duration(t.Unix())]; ok {
-						reqsPerSecond[time.Duration(t.Unix())]++
-					} else {
-						reqsPerSecond[time.Duration(t.Unix())] = 1
-					}
-				}
-			}
+			prevSuccess = success
+			prevError = errs
 		}
 	}
-
-	if len(reqsPerSecond) > 0 {
-		results.RPS.Min = reqsPerSecond[0]
-
-		for _, val := range reqsPerSecond {
-			if val > results.RPS.Max {
-				results.RPS.Max = val
-			}
-			if val < results.RPS.Min {
-				results.RPS.Min = val
-			}
-		}
-
-		results.RPS.Average = float64(results.CompletedReqs) / (float64(results.Total) / float64(time.Second))
-	}
-
-	if len(results.LatencyPerReq) > 0 {
-		pterm.Debug.Println("Calculating max/min latency")
-
-		var totalLatency time.Duration = 0
-		results.Latency.Min = results.LatencyPerReq[0]
-
-		for _, r := range results.LatencyPerReq {
-			if r > results.Latency.Max {
-				results.Latency.Max = r
-			}
-			if r < results.Latency.Min {
-				results.Latency.Min = r
-			}
-			totalLatency += r
-		}
-
-		results.Latency.Average = totalLatency / time.Duration(len(results.LatencyPerReq))
-	}
-
-	return results, nil
 }
 
 func (p *PayLoader) Run() (*Results, error) {
