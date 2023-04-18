@@ -135,7 +135,8 @@ func getClient(config *Config) (*fasthttp.HostClient, error) {
 		TLSConfig:                     tlsConfig,
 	}
 
-	// TODO implement HTTPv3??? from github.com/quic-go/quic-go
+	// TODO implement HTTPv3??? from github.com/quic-go/quic-go in use by 25% of websites!! should probably support it
+	// //
 	//if config.HTTPV3 {
 	//	return &http.Client{
 	//		Transport: &http3.RoundTripper{},
@@ -145,6 +146,9 @@ func getClient(config *Config) (*fasthttp.HostClient, error) {
 	if !config.HTTPV2 {
 		return client, nil
 	}
+
+	// TODO can't ctrl+c when http2 client can't connect to server which is down, just hangs
+	// TODO look into how to send reqs i.e. pipelining... does it actually speed stuff up? in use by 40% so should support
 
 	if err := http2.ConfigureClient(client, http2.ClientOpts{
 		MaxResponseTime: config.ReadTimeout,

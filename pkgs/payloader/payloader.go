@@ -80,6 +80,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 		c := &worker.Config{
 			ReqURI:           p.config.ReqURI,
 			DisableKeepAlive: p.config.DisableKeepAlive,
+			SkipVerify:       p.config.SkipVerify,
 			MTLSKey:          p.config.MTLSKey,
 			MTLSCert:         p.config.MTLSCert,
 			ReqTarget:        reqsPerWorker,

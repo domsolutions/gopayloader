@@ -11,7 +11,7 @@ const (
 	argConnections  = "connections"
 	argRequests     = "requests"
 	argKeepAlive    = "disable-keep-alive"
-	argVerifySigner = "verify"
+	argVerifySigner = "skip-verify"
 	argTime         = "time"
 	argHost         = "host"
 	argMTLSKey      = "mtls-key"
@@ -89,7 +89,7 @@ func init() {
 	runCmd.Flags().BoolVarP(&disableKeepAlive, argKeepAlive, "k", false, "Disable keep-alive connections")
 	// TODO test http/2 works - just hangs
 	runCmd.Flags().BoolVar(&HTTPV2, argHTTPV2, false, "Use HTTP/2")
-	runCmd.Flags().BoolVar(&skipVerify, argVerifySigner, true, "Verify SSL cert signer")
+	runCmd.Flags().BoolVar(&skipVerify, argVerifySigner, false, "Skip verify SSL cert signer")
 	runCmd.Flags().DurationVarP(&duration, argTime, "t", 0, "Execution time window, if used with -r will uniformly distribute reqs within time window, without -r reqs are unlimited")
 	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 5*time.Second, "Read timeout")
 	runCmd.Flags().DurationVar(&writeTimeout, argWriteTimeout, 5*time.Second, "Write timeout")
@@ -102,6 +102,7 @@ func init() {
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
 
 	// TODO basic auth, set any header, set host, post body
+	// TODO in stats, bytes sent/received... received means reading body, possibly rps reduce
 
 	runCmd.Flags().StringVar(&jwtCert, argJWTCert, "", "JWT signing cert path")
 	runCmd.Flags().StringVar(&jwtKey, argJWTKey, "", "JWT signing private key path")
