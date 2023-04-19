@@ -3,11 +3,18 @@ package payloader
 import (
 	"context"
 	"github.com/domsolutions/gopayloader/config"
+	jwt_generator "github.com/domsolutions/gopayloader/pkgs/jwt-generator"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"github.com/pterm/pterm"
+	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
+)
+
+const (
+	cacheDir = "gopayloader"
 )
 
 type PayLoader struct {
@@ -58,6 +65,31 @@ func (p *PayLoader) startWorkers(wg *sync.WaitGroup) {
 }
 
 func (p *PayLoader) handleReqs() (*Results, error) {
+	if p.config.SendJWT {
+		jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
+			Ctx:        p.config.Ctx,
+			Kid:        p.config.JwtKID,
+			JwtKeyPath: p.config.JwtKey,
+			JwtSub:     p.config.JwtSub,
+			JwtIss:     p.config.JwtIss,
+			JwtAud:     p.config.JwtAud,
+		})
+
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		jwtSaveDir := filepath.Join(homeDir, ".cache", cacheDir)
+		if err := os.MkdirAll(jwtSaveDir, 0755); err != nil {
+			return nil, err
+		}
+		if err := jwt.Generate(p.config.ReqTarget, jwtSaveDir); err != nil {
+			return nil, err
+		}
+	}
+
+	// TODO machine has 8 cores but tests don't use all of them... why? maybe as http/1.1 waiting for response
+
 	reqsPerWorker := p.config.ReqTarget / int64(p.config.Conns)
 	remainderReqs := p.config.ReqTarget % int64(p.config.Conns)
 

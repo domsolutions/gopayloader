@@ -65,40 +65,52 @@ func NewWorker(config *Config) (Worker, error) {
 	if err != nil {
 		return nil, err
 	}
+	//
+	//if responsePool == nil {
+	//	responsePool = &sync.Pool{New: func() any {
+	//		return &fasthttp.Response{}
+	//	}}
+	//}
+	//
+	//if requestPool == nil {
+	//	requestPool = &sync.Pool{New: func() any {
+	//		req := &fasthttp.Request{}
+	//		if config.DisableKeepAlive {
+	//			req.Header.Add(fasthttp.HeaderConnection, "close")
+	//		}
+	//		if config.Method != "GET" {
+	//			req.Header.SetMethodBytes([]byte(config.Method))
+	//		}
+	//		req.SetRequestURI(config.ReqURI)
+	//		return req
+	//	}}
+	//}
 
-	if responsePool == nil {
-		responsePool = &sync.Pool{New: func() any {
-			return &fasthttp.Response{}
-		}}
+	resp := &fasthttp.Response{}
+	req := &fasthttp.Request{}
+	req.SetRequestURI(config.ReqURI)
+	if config.DisableKeepAlive {
+		req.Header.Add(fasthttp.HeaderConnection, "close")
 	}
-
-	if requestPool == nil {
-		requestPool = &sync.Pool{New: func() any {
-			req := &fasthttp.Request{}
-			if config.DisableKeepAlive {
-				req.Header.Add(fasthttp.HeaderConnection, "close")
-			}
-			if config.Method != "GET" {
-				req.Header.SetMethodBytes([]byte(config.Method))
-			}
-			req.SetRequestURI(config.ReqURI)
-			return req
-		}}
+	if config.Method != "GET" {
+		req.Header.SetMethodBytes([]byte(config.Method))
 	}
 
 	if !config.TimeLimited() {
-		return &WorkerFixedReqs{baseConfig(config, client)}, nil
+		return &WorkerFixedReqs{baseConfig(config, client, req, resp)}, nil
 	}
 
 	if config.UnlimitedReqs() {
-		return &WorkerFixedTime{baseConfig(config, client)}, nil
+		return &WorkerFixedTime{baseConfig(config, client, req, resp)}, nil
 	}
-	return &WorkerFixedTimeRequests{baseConfig(config, client)}, nil
+	return &WorkerFixedTimeRequests{baseConfig(config, client, req, resp)}, nil
 }
 
-func baseConfig(config *Config, client *fasthttp.HostClient) *WorkerBase {
+func baseConfig(config *Config, client *fasthttp.HostClient, req *fasthttp.Request, resp *fasthttp.Response) *WorkerBase {
 	return &WorkerBase{
 		config: config,
+		req:    req,
+		resp:   resp,
 		client: client,
 		stats: Stats{
 			Responses: make(map[ResponseCode]int64),

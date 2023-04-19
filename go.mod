@@ -4,7 +4,11 @@ go 1.19
 
 require (
 	github.com/dgrr/http2 v0.3.5
+	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/google/uuid v1.3.0
 	github.com/jedib0t/go-pretty/v6 v6.4.6
+	github.com/pterm/pterm v0.12.59
+	github.com/quic-go/quic-go v0.33.0
 	github.com/spf13/cobra v1.7.0
 	github.com/valyala/fasthttp v1.34.0
 )
@@ -23,11 +27,9 @@ require (
 	github.com/lithammer/fuzzysearch v1.1.5 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/onsi/ginkgo/v2 v2.9.2 // indirect
-	github.com/pterm/pterm v0.12.59 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-19 v0.3.2 // indirect
 	github.com/quic-go/qtls-go1-20 v0.2.2 // indirect
-	github.com/quic-go/quic-go v0.33.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

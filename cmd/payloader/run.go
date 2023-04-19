@@ -21,13 +21,13 @@ const (
 	argVerbose      = "verbose"
 	argTicker       = "ticker"
 	argHTTPV2       = "http-v2"
-	argJWTCert      = "jwt-cert"
 	argJWTKey       = "jwt-key"
 	argJWTSUb       = "jwt-sub"
 	argJWTIss       = "jwt-iss"
 	argJWTAud       = "jwt-aud"
 	argJWTHeader    = "jwt-header"
 	argJWTEnable    = "jwt-enable"
+	argJWTKid       = "jwt-kid"
 )
 
 var (
@@ -45,13 +45,13 @@ var (
 	verbose          bool
 	ticker           time.Duration
 	HTTPV2           bool
-	jwtCert          string
 	jwtKey           string
 	jwtSub           string
 	jwtIss           string
 	jwtAud           string
 	jwtHeader        string
 	sendJWT          bool
+	jwtKID           string
 )
 
 var runCmd = &cobra.Command{
@@ -73,7 +73,7 @@ var runCmd = &cobra.Command{
 			verbose,
 			ticker,
 			HTTPV2,
-			jwtCert,
+			jwtKID,
 			jwtKey,
 			jwtSub,
 			jwtIss,
@@ -104,7 +104,7 @@ func init() {
 	// TODO basic auth, set any header, set host, post body
 	// TODO in stats, bytes sent/received... received means reading body, possibly rps reduce
 
-	runCmd.Flags().StringVar(&jwtCert, argJWTCert, "", "JWT signing cert path")
+	runCmd.Flags().StringVar(&jwtKID, argJWTKid, "", "JWT KID")
 	runCmd.Flags().StringVar(&jwtKey, argJWTKey, "", "JWT signing private key path")
 	runCmd.Flags().StringVar(&jwtAud, argJWTAud, "", "JWT audience (aud) claim")
 	runCmd.Flags().StringVar(&jwtIss, argJWTIss, "", "JWT issuer (iss) claim")
@@ -113,7 +113,7 @@ func init() {
 	runCmd.Flags().BoolVar(&sendJWT, argJWTEnable, false, "Send JWTs with requests")
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
-	runCmd.MarkFlagsRequiredTogether(argJWTCert, argJWTKey, argJWTEnable)
+	runCmd.MarkFlagsRequiredTogether(argJWTKey, argJWTEnable)
 
 	if err := runCmd.MarkFlagRequired(argHost); err != nil {
 		panic(err)
