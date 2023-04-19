@@ -64,19 +64,29 @@ func (j *JWTGenerator) getFileName(dir string) string {
 	return filepath.Join(dir, "gopayloader-jwtstore-"+hex.EncodeToString(hash.Sum(nil))+".txt")
 }
 
-func (j *JWTGenerator) Generate(reqJwtCount int64, dir string) error {
+func (j *JWTGenerator) Generate(reqJwtCount int64, dir string, retry bool) error {
 	if err := j.config.validate(); err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(j.getFileName(dir), os.O_CREATE|os.O_RDWR, 0666)
+	fname := j.getFileName(dir)
+	f, err := os.OpenFile(fname, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return fmt.Errorf("jwt: failed to create/open file to store jwts; %v", err)
 	}
 	defer f.Close()
 	cache, err := newCache(f)
 	if err != nil {
-		return err
+		if retry {
+			return err
+		}
+		f.Close()
+		pterm.Error.Printf("jwt cache %s file corrupt, attempting to delete and recreate", fname)
+		if err := os.Remove(fname); err != nil {
+			pterm.Error.Printf("Couldn't remove cache file %s; %v", fname, err)
+			return err
+		}
+		return j.Generate(reqJwtCount, dir, true)
 	}
 
 	if err := j.batchGenSave(reqJwtCount, batchSize, cache); err != nil {

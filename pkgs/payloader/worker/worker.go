@@ -20,9 +20,6 @@ type WorkerBase struct {
 }
 
 func (w *WorkerBase) run() {
-	//w.req = requestPool.Get().(*fasthttp.Request)
-	//w.resp = responsePool.Get().(*fasthttp.Response)
-
 	err := w.process()
 	if err != nil {
 		if _, ok := w.stats.Errors[err.Error()]; ok {
@@ -41,8 +38,6 @@ func (w *WorkerBase) process() error {
 	var err error
 
 	defer func() {
-		//requestPool.Put(w.req)
-		//responsePool.Put(w.resp)
 		if err == nil {
 			w.stats.Reqs = append(w.stats.Reqs, ReqLatency{begin, time.Now().UnixNano()})
 		}

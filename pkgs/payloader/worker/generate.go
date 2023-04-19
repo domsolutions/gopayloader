@@ -10,11 +10,6 @@ import (
 	"time"
 )
 
-var (
-	requestPool  *sync.Pool
-	responsePool *sync.Pool
-)
-
 const (
 	ReqBegin = 0
 	ReqEnd   = 1
@@ -65,26 +60,6 @@ func NewWorker(config *Config) (Worker, error) {
 	if err != nil {
 		return nil, err
 	}
-	//
-	//if responsePool == nil {
-	//	responsePool = &sync.Pool{New: func() any {
-	//		return &fasthttp.Response{}
-	//	}}
-	//}
-	//
-	//if requestPool == nil {
-	//	requestPool = &sync.Pool{New: func() any {
-	//		req := &fasthttp.Request{}
-	//		if config.DisableKeepAlive {
-	//			req.Header.Add(fasthttp.HeaderConnection, "close")
-	//		}
-	//		if config.Method != "GET" {
-	//			req.Header.SetMethodBytes([]byte(config.Method))
-	//		}
-	//		req.SetRequestURI(config.ReqURI)
-	//		return req
-	//	}}
-	//}
 
 	resp := &fasthttp.Response{}
 	req := &fasthttp.Request{}

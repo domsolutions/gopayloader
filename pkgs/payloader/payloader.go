@@ -2,6 +2,7 @@ package payloader
 
 import (
 	"context"
+	"errors"
 	"github.com/domsolutions/gopayloader/config"
 	jwt_generator "github.com/domsolutions/gopayloader/pkgs/jwt-generator"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
@@ -78,13 +79,22 @@ func (p *PayLoader) startWorkers(wg *sync.WaitGroup) {
 
 func (p *PayLoader) handleReqs() (*Results, error) {
 	if p.config.ClearCache {
-		pterm.Debug.Println("Clearing JWT cache")
-		if err := os.RemoveAll(jwtSaveDir); err != nil {
-			pterm.Error.Printf("Failed to clear jwt cache; %v", err)
+		if jwtSaveDir == "" {
+			pterm.Error.Println("Cache directory couldn't be determined")
+		} else {
+			pterm.Debug.Println("Clearing JWT cache")
+			if err := os.RemoveAll(jwtSaveDir); err != nil {
+				pterm.Error.Printf("Failed to clear jwt cache; %v", err)
+			}
 		}
 	}
 
 	if p.config.SendJWT {
+		if jwtSaveDir == "" {
+			pterm.Error.Println("Cache directory couldn't be determined, can't generate jwts")
+			return nil, errors.New("cache directory couldn't be determined")
+		}
+
 		jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
 			Ctx:        p.config.Ctx,
 			Kid:        p.config.JwtKID,
@@ -94,15 +104,10 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			JwtAud:     p.config.JwtAud,
 		})
 
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return nil, err
-		}
-		jwtSaveDir := filepath.Join(homeDir, ".cache", cacheDir)
 		if err := os.MkdirAll(jwtSaveDir, 0755); err != nil {
 			return nil, err
 		}
-		if err := jwt.Generate(p.config.ReqTarget, jwtSaveDir); err != nil {
+		if err := jwt.Generate(p.config.ReqTarget, jwtSaveDir, false); err != nil {
 			return nil, err
 		}
 	}

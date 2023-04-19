@@ -1,8 +1,6 @@
 package worker
 
-import (
-	"sync"
-)
+import "sync"
 
 type WorkerFixedReqs struct {
 	*WorkerBase
