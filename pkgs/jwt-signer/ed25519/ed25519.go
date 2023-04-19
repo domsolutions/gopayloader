@@ -1,39 +1,39 @@
 package ecdsa
 
 import (
-	"crypto/ecdsa"
+	"crypto/ed25519"
 	"github.com/domsolutions/gopayloader/pkgs/jwt-signer/definition"
 	"github.com/golang-jwt/jwt"
 	"github.com/pterm/pterm"
 )
 
-type SignerECDSA struct {
+type SignerED25519 struct {
 	kid     string
-	privKey *ecdsa.PrivateKey
+	privKey ed25519.PrivateKey
 }
 
 func CreateSigner(privKey []byte, kid string) (definition.Signer, error) {
-	ecdsaKey, err := jwt.ParseECPrivateKeyFromPEM(privKey)
+	edKey, err := jwt.ParseEdPrivateKeyFromPEM(privKey)
 	if err != nil {
-		pterm.Debug.Printf("Failed to parse ECDSA private key %v", err)
+		pterm.Debug.Printf("Failed to parse ED25519 private key %v", err)
 		return nil, err
 	}
 
-	s := &SignerECDSA{
+	s := &SignerED25519{
 		kid:     kid,
-		privKey: ecdsaKey,
+		privKey: edKey.(ed25519.PrivateKey),
 	}
 	claim := make(jwt.MapClaims)
 	claim["test"] = true
 	if _, err := s.Generate(claim); err != nil {
-		pterm.Debug.Printf("Failed to generate ECDSA jwt %v", err)
+		pterm.Debug.Printf("Failed to generate ED25519 jwt %v", err)
 		return nil, err
 	}
 	return s, nil
 }
 
-func (e *SignerECDSA) Generate(claims jwt.MapClaims) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+func (e *SignerED25519) Generate(claims jwt.MapClaims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	token.Header["kid"] = e.kid
 
 	t, err := token.SignedString(e.privKey)

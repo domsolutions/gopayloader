@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	batchSize = 100000
+	batchSize = 1000000
 )
 
 type Config struct {

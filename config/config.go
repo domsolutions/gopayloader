@@ -32,9 +32,10 @@ type Config struct {
 	JwtAud           string
 	JwtHeader        string
 	SendJWT          bool
+	ClearCache       bool
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT bool) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
@@ -58,6 +59,7 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		JwtAud:           jwtAud,
 		JwtHeader:        jwtHeader,
 		SendJWT:          sendJWT,
+		ClearCache:       clearCache,
 	}
 }
 

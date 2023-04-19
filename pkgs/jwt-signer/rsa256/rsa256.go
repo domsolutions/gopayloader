@@ -1,39 +1,39 @@
-package ecdsa
+package rsa256
 
 import (
-	"crypto/ecdsa"
+	"crypto/rsa"
 	"github.com/domsolutions/gopayloader/pkgs/jwt-signer/definition"
 	"github.com/golang-jwt/jwt"
 	"github.com/pterm/pterm"
 )
 
-type SignerECDSA struct {
+type SignerRSA256 struct {
 	kid     string
-	privKey *ecdsa.PrivateKey
+	privKey *rsa.PrivateKey
 }
 
 func CreateSigner(privKey []byte, kid string) (definition.Signer, error) {
-	ecdsaKey, err := jwt.ParseECPrivateKeyFromPEM(privKey)
+	rsaKey, err := jwt.ParseRSAPrivateKeyFromPEM(privKey)
 	if err != nil {
-		pterm.Debug.Printf("Failed to parse ECDSA private key %v", err)
+		pterm.Debug.Printf("Failed to parse RSA256 private key %v", err)
 		return nil, err
 	}
 
-	s := &SignerECDSA{
+	s := &SignerRSA256{
 		kid:     kid,
-		privKey: ecdsaKey,
+		privKey: rsaKey,
 	}
 	claim := make(jwt.MapClaims)
 	claim["test"] = true
 	if _, err := s.Generate(claim); err != nil {
-		pterm.Debug.Printf("Failed to generate ECDSA jwt %v", err)
+		pterm.Debug.Printf("Failed to generate RSA256 jwt %v", err)
 		return nil, err
 	}
 	return s, nil
 }
 
-func (e *SignerECDSA) Generate(claims jwt.MapClaims) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+func (e *SignerRSA256) Generate(claims jwt.MapClaims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	token.Header["kid"] = e.kid
 
 	t, err := token.SignedString(e.privKey)

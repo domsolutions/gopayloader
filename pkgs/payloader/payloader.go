@@ -17,6 +17,18 @@ const (
 	cacheDir = "gopayloader"
 )
 
+var (
+	jwtSaveDir string
+)
+
+func init() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	jwtSaveDir = filepath.Join(homeDir, ".cache", cacheDir)
+}
+
 type PayLoader struct {
 	config    *config.Config
 	startTime time.Time
@@ -65,6 +77,13 @@ func (p *PayLoader) startWorkers(wg *sync.WaitGroup) {
 }
 
 func (p *PayLoader) handleReqs() (*Results, error) {
+	if p.config.ClearCache {
+		pterm.Debug.Println("Clearing JWT cache")
+		if err := os.RemoveAll(jwtSaveDir); err != nil {
+			pterm.Error.Printf("Failed to clear jwt cache; %v", err)
+		}
+	}
+
 	if p.config.SendJWT {
 		jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
 			Ctx:        p.config.Ctx,
