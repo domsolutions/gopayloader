@@ -21,6 +21,7 @@ var (
 	fasthttp1    bool
 	nethttp2     bool
 	httpv3       bool
+	debug        bool
 )
 
 var (
@@ -75,6 +76,9 @@ var runServerCmd = &cobra.Command{
 					if err != nil {
 						log.Println(err)
 					}
+					if debug {
+						log.Printf("%s\n", c.Request.Header.String())
+					}
 				},
 			}
 
@@ -120,5 +124,6 @@ func init() {
 	runServerCmd.Flags().BoolVar(&fasthttp1, "fasthttp-1", false, "Fasthttp HTTP/1.1 server")
 	runServerCmd.Flags().BoolVar(&nethttp2, "nethttp-2", false, "net/http HTTP/2 server")
 	runServerCmd.Flags().BoolVar(&httpv3, "http-3", false, "HTTP/3 server")
+	runServerCmd.Flags().BoolVarP(&debug, "verbose", "v", false, "print logs")
 	rootCmd.AddCommand(runServerCmd)
 }

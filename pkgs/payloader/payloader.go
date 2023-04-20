@@ -89,7 +89,10 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 		}
 	}
 
-	if p.config.SendJWT {
+	var jwtStreamErrs <-chan error
+	var jwtStream <-chan string
+
+	if p.config.SendJWT && p.config.ReqTarget != 0 {
 		if jwtSaveDir == "" {
 			pterm.Error.Println("Cache directory couldn't be determined, can't generate jwts")
 			return nil, errors.New("cache directory couldn't be determined")
@@ -110,6 +113,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 		if err := jwt.Generate(p.config.ReqTarget, jwtSaveDir, false); err != nil {
 			return nil, err
 		}
+		jwtStream, jwtStreamErrs = jwt.JWTS(p.config.ReqTarget)
 	}
 
 	// TODO machine has 8 cores but tests don't use all of them... why? maybe as http/1.1 waiting for response
@@ -149,9 +153,14 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			Method:           p.config.Method,
 			Verbose:          p.config.Verbose,
 			HTTPV2:           p.config.HTTPV2,
+			JWTHeader:        p.config.JwtHeader,
 		}
 		if conn == 0 {
 			c.ReqTarget += remainderReqs
+		}
+
+		if p.config.SendJWT {
+			c.JwtStreamReceiver = jwtStream
 		}
 
 		w, err := worker.NewWorker(c)
@@ -161,6 +170,14 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 
 		workers[conn] = w
 		go w.Run(workersComplete)
+	}
+
+	if p.config.SendJWT {
+		go func() {
+			err := <-jwtStreamErrs
+			pterm.Error.Printf("jwt generator failure; %v", err)
+			// TODO err handle
+		}()
 	}
 
 	p.startWorkers(startTrigger)

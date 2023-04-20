@@ -30,6 +30,7 @@ type Config struct {
 	JwtIss     string
 	JwtAud     string
 	signer     definition.Signer
+	store      *cache
 }
 
 type JWTGenerator struct {
@@ -64,7 +65,7 @@ func (j *JWTGenerator) getFileName(dir string) string {
 	return filepath.Join(dir, "gopayloader-jwtstore-"+hex.EncodeToString(hash.Sum(nil))+".txt")
 }
 
-func (j *JWTGenerator) Generate(reqJwtCount int64, dir string, retry bool) error {
+func (j *JWTGenerator) Generate(reqJwtCount int64, dir string, retrying bool) error {
 	if err := j.config.validate(); err != nil {
 		return err
 	}
@@ -74,10 +75,9 @@ func (j *JWTGenerator) Generate(reqJwtCount int64, dir string, retry bool) error
 	if err != nil {
 		return fmt.Errorf("jwt: failed to create/open file to store jwts; %v", err)
 	}
-	defer f.Close()
 	cache, err := newCache(f)
 	if err != nil {
-		if retry {
+		if retrying {
 			return err
 		}
 		f.Close()
@@ -88,16 +88,21 @@ func (j *JWTGenerator) Generate(reqJwtCount int64, dir string, retry bool) error
 		}
 		return j.Generate(reqJwtCount, dir, true)
 	}
+	j.config.store = cache
 
-	if err := j.batchGenSave(reqJwtCount, batchSize, cache); err != nil {
+	if err := j.batchGenSave(reqJwtCount, batchSize); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (j *JWTGenerator) batchGenSave(reqJwtAmount, batchSize int64, cache *cache) error {
-	toGenerate := reqJwtAmount - cache.getJwtCount()
-	if toGenerate == 0 {
+func (j *JWTGenerator) JWTS(count int64) (<-chan string, <-chan error) {
+	return j.config.store.get(count)
+}
+
+func (j *JWTGenerator) batchGenSave(reqJwtAmount, batchSize int64) error {
+	toGenerate := reqJwtAmount - j.config.store.getJwtCount()
+	if toGenerate <= 0 {
 		pterm.Debug.Println("No JWTs to generate, enough in cache")
 		return nil
 	}
@@ -135,19 +140,19 @@ func (j *JWTGenerator) batchGenSave(reqJwtAmount, batchSize int64, cache *cache)
 				continue
 			}
 			pterm.Debug.Printf("Finished batch %d saving to disk\n", len(tokens))
-			if err := cache.save(tokens); err != nil {
+			if err := j.config.store.save(tokens); err != nil {
 				return err
 			}
 			tokens = tokens[:0]
 		}
 	}
 
-	if cache.getJwtCount() == reqJwtAmount {
+	if j.config.store.getJwtCount() == reqJwtAmount {
 		// all jwts generated
 		return nil
 	}
 
-	return j.batchGenSave(reqJwtAmount, batchSize, cache)
+	return j.batchGenSave(reqJwtAmount, batchSize)
 }
 
 func (j *JWTGenerator) generate(limit int64, errs chan<- error, response chan<- []string) {

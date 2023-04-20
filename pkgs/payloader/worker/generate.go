@@ -18,21 +18,23 @@ const (
 type TotalRequestsComplete int64
 
 type Config struct {
-	ReqURI           string
-	DisableKeepAlive bool
-	SkipVerify       bool
-	MTLSKey          string
-	MTLSCert         string
-	ReqTarget        int64
-	Ctx              context.Context
-	StartTrigger     *sync.WaitGroup
-	Until            time.Duration
-	ReqEvery         time.Duration
-	ReadTimeout      time.Duration
-	WriteTimeout     time.Duration
-	Method           string
-	Verbose          bool
-	HTTPV2           bool
+	ReqURI            string
+	DisableKeepAlive  bool
+	SkipVerify        bool
+	MTLSKey           string
+	MTLSCert          string
+	ReqTarget         int64
+	Ctx               context.Context
+	StartTrigger      *sync.WaitGroup
+	Until             time.Duration
+	ReqEvery          time.Duration
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	Method            string
+	Verbose           bool
+	HTTPV2            bool
+	JwtStreamReceiver <-chan string
+	JWTHeader         string
 }
 
 type ResponseCode int
@@ -47,8 +49,8 @@ type Stats struct {
 	Errors        map[string]uint
 }
 
-func (c *Config) TimeLimited() bool {
-	return c.Until != 0
+func (c *Config) ReqLimitedOnly() bool {
+	return c.Until == 0 && c.ReqTarget != 0
 }
 
 func (c *Config) UnlimitedReqs() bool {
@@ -71,13 +73,31 @@ func NewWorker(config *Config) (Worker, error) {
 		req.Header.SetMethodBytes([]byte(config.Method))
 	}
 
-	if !config.TimeLimited() {
+	if config.ReqLimitedOnly() {
+		if config.JwtStreamReceiver != nil {
+			return &WorkerFixedReqsJwts{
+				WorkerJWTBase: &WorkerJWTBase{
+					config: config,
+					req:    req,
+					resp:   resp,
+					client: client,
+					stats: Stats{
+						Responses: make(map[ResponseCode]int64),
+						Errors:    make(map[string]uint),
+					},
+					jwtHeader: config.JWTHeader,
+					jwtStream: config.JwtStreamReceiver,
+				},
+			}, nil
+		}
 		return &WorkerFixedReqs{baseConfig(config, client, req, resp)}, nil
 	}
 
 	if config.UnlimitedReqs() {
 		return &WorkerFixedTime{baseConfig(config, client, req, resp)}, nil
 	}
+
+	// TODO jwt header for fixed time/reqs.... refactor
 	return &WorkerFixedTimeRequests{baseConfig(config, client, req, resp)}, nil
 }
 
