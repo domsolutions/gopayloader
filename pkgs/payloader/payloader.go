@@ -176,7 +176,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 		go func() {
 			err := <-jwtStreamErrs
 			pterm.Error.Printf("jwt generator failure; %v", err)
-			// TODO err handle
+			// TODO handle error
 		}()
 	}
 
