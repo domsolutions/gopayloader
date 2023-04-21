@@ -137,7 +137,6 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 
 	var conn uint
 	for conn = 0; conn < p.config.Conns; conn++ {
-
 		c := &worker.Config{
 			ReqURI:           p.config.ReqURI,
 			DisableKeepAlive: p.config.DisableKeepAlive,
@@ -156,10 +155,11 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			HTTPV2:           p.config.HTTPV2,
 		}
 
+		// evenly distribute remainder reqs
 		if remainderReqs > 0 {
 			c.ReqTarget++
+			remainderReqs--
 		}
-		remainderReqs--
 
 		if p.config.SendJWT {
 			c.JwtStreamReceiver = jwtStream
@@ -213,7 +213,6 @@ func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker
 	}
 
 	defer displayStats.Stop()
-
 	progress, err = p.getProgressBar(endTime, reqTarget)
 	if err != nil {
 		return
@@ -251,6 +250,7 @@ func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker
 			prevError = errs
 		}
 	}
+
 }
 
 func (p *PayLoader) getProgressBar(endTime time.Duration, reqTarget int) (*pterm.ProgressbarPrinter, error) {
