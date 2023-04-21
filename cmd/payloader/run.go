@@ -116,11 +116,10 @@ func init() {
 	runCmd.Flags().StringVar(&bodyFile, argBodyFile, "", "read request body from file")
 	runCmd.Flags().BoolVarP(&verbose, argVerbose, "v", false, "verbose - slows down RPS slightly for long running tests")
 	runCmd.Flags().DurationVar(&ticker, argTicker, time.Second, "How often to print results while running in verbose mode")
+	headers = runCmd.Flags().StringSliceP(argHeaders, "H", []string{}, "headers to send in request, can have multiple i.e -H 'content-type:application/json' -H' connection:close'")
 
 	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
-
-	headers = runCmd.Flags().StringSliceP(argHeaders, "H", []string{}, "headers to send in request, can have multiple i.e -H 'content-type:application/json' -H' connection:close'")
 
 	// TODO in stats, bytes sent/received... received means reading body, possibly rps reduce
 
