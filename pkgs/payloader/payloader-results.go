@@ -54,13 +54,12 @@ func (p *PayloaderResults) ComputeResults(workers []worker.Worker) (*Results, er
 	// TODO optimise 3 loops
 	pterm.Debug.Println("Calculating max/min RPS")
 	reqsPerSecond := make(map[time.Duration]uint64)
-	for t := results.Start; t.Before(results.End); t = t.Add(time.Second) {
+	for t := results.Start; t.Before(results.End); t = t.Add(500 * time.Millisecond) {
 		begin := t.UnixNano()
 		end := t.Add(time.Second).UnixNano()
 
 		for _, w := range workers {
-			stats := w.Stats()
-			for _, l := range stats.Reqs {
+			for _, l := range w.Stats().Reqs {
 				if l[worker.ReqBegin] >= begin && l[worker.ReqEnd] <= end {
 					if _, ok := reqsPerSecond[time.Duration(t.Unix())]; ok {
 						reqsPerSecond[time.Duration(t.Unix())]++

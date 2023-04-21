@@ -1,16 +1,11 @@
 package worker
 
 import (
-	"context"
-	"crypto/tls"
 	"fmt"
-	"github.com/dgrr/http2"
-	"github.com/valyala/fasthttp"
-	"net/url"
+	http_clients "github.com/domsolutions/gopayloader/pkgs/http-clients"
+	"github.com/domsolutions/gopayloader/pkgs/http-clients/fasthttp"
 	"os"
 	"strings"
-	"sync"
-	"time"
 )
 
 const (
@@ -19,30 +14,6 @@ const (
 )
 
 type TotalRequestsComplete int64
-
-type Config struct {
-	ReqURI            string
-	DisableKeepAlive  bool
-	SkipVerify        bool
-	MTLSKey           string
-	MTLSCert          string
-	ReqTarget         int64
-	Ctx               context.Context
-	StartTrigger      *sync.WaitGroup
-	Until             time.Duration
-	ReqEvery          time.Duration
-	ReadTimeout       time.Duration
-	WriteTimeout      time.Duration
-	Method            string
-	Verbose           bool
-	HTTPV2            bool
-	JwtStreamReceiver <-chan string
-	JwtStreamErr      <-chan error
-	JWTHeader         string
-	Headers           []string
-	Body              string
-	BodyFile          string
-}
 
 type ResponseCode int
 
@@ -56,22 +27,14 @@ type Stats struct {
 	Errors        map[string]uint
 }
 
-func (c *Config) ReqLimitedOnly() bool {
-	return c.Until == 0 && c.ReqTarget != 0
-}
-
-func (c *Config) UnlimitedReqs() bool {
-	return c.Until != 0 && c.ReqTarget == 0
-}
-
-func NewWorker(config *Config) (Worker, error) {
+func NewWorker(config *http_clients.Config) (Worker, error) {
 	client, err := getClient(config)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &fasthttp.Response{}
-	req, err := getReq(config)
+	resp := client.NewResponse()
+	req, err := getReq(client, config)
 	if err != nil {
 		return nil, err
 	}
@@ -96,24 +59,24 @@ func NewWorker(config *Config) (Worker, error) {
 	return w, nil
 }
 
-func getReq(config *Config) (*fasthttp.Request, error) {
-	req := &fasthttp.Request{}
+func getReq(client http_clients.GoPayLoaderClient, config *http_clients.Config) (http_clients.Request, error) {
+	req := client.NewReq()
 	req.SetRequestURI(config.ReqURI)
 	if config.DisableKeepAlive {
-		req.Header.Add(fasthttp.HeaderConnection, "close")
+		req.SetHeader("Connection", "close")
 	}
 	if config.Method != "GET" {
-		req.Header.SetMethodBytes([]byte(config.Method))
+		req.SetMethod(config.Method)
 	}
 	if len(config.Headers) > 0 {
 		for _, h := range config.Headers {
 			header := strings.Split(h, ":")
-			req.Header.Set(header[0], header[1])
+			req.SetHeader(header[0], header[1])
 		}
 	}
 
 	if len(config.Body) > 0 {
-		req.SetBodyString(config.Body)
+		req.SetBody([]byte(config.Body))
 	}
 
 	if len(config.BodyFile) > 0 {
@@ -135,11 +98,11 @@ func jwtMiddleware(w *WorkerBase) {
 	//	pterm.Error.Printf("Failed to get jwts from cache, got error; %v \n", err)
 	//	return TODO fix
 	case jwt := <-w.config.JwtStreamReceiver:
-		w.req.Header.Set(w.config.JWTHeader, jwt)
+		w.req.SetHeader(w.config.JWTHeader, jwt)
 	}
 }
 
-func baseConfig(config *Config, client *fasthttp.HostClient, req *fasthttp.Request, resp *fasthttp.Response) *WorkerBase {
+func baseConfig(config *http_clients.Config, client http_clients.GoPayLoaderClient, req http_clients.Request, resp http_clients.Response) *WorkerBase {
 	return &WorkerBase{
 		config: config,
 		req:    req,
@@ -152,54 +115,7 @@ func baseConfig(config *Config, client *fasthttp.HostClient, req *fasthttp.Reque
 	}
 }
 
-func getClient(config *Config) (*fasthttp.HostClient, error) {
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: config.SkipVerify,
-	}
-
-	if config.MTLSCert != "" && config.MTLSKey != "" {
-		cert, err := tls.LoadX509KeyPair(config.MTLSCert, config.MTLSKey)
-		if err != nil {
-			return nil, err
-		}
-		tlsConfig.Certificates = []tls.Certificate{cert}
-	}
-
-	u, err := url.ParseRequestURI(config.ReqURI)
-	if err != nil {
-		return nil, err
-	}
-
-	client := &fasthttp.HostClient{
-		Addr:                          u.Host,
-		IsTLS:                         u.Scheme == "https",
-		MaxConns:                      1,
-		ReadTimeout:                   config.ReadTimeout,
-		WriteTimeout:                  config.WriteTimeout,
-		DisableHeaderNamesNormalizing: true,
-		TLSConfig:                     tlsConfig,
-	}
-
-	// TODO implement HTTPv3??? from github.com/quic-go/quic-go in use by 25% of websites!! should probably support it
-	// //
-	//if config.HTTPV3 {
-	//	return &http.Client{
-	//		Transport: &http3.RoundTripper{},
-	//	}, nil
-	//}
-
-	if !config.HTTPV2 {
-		return client, nil
-	}
-
-	// TODO can't ctrl+c when http2 client can't connect to server which is down, just hangs
-	// TODO look into how to send reqs i.e. pipelining... does it actually speed stuff up? in use by 40% so should support
-
-	if err := http2.ConfigureClient(client, http2.ClientOpts{
-		MaxResponseTime: config.ReadTimeout,
-	}); err != nil {
-		return nil, err
-	}
-
-	return client, nil
+func getClient(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
+	// TODO return other clients; net/http, http3
+	return fasthttp.GetFastHTTPClient(config)
 }

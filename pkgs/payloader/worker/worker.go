@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"github.com/valyala/fasthttp"
+	http_clients "github.com/domsolutions/gopayloader/pkgs/http-clients"
 	"sync"
 	"time"
 )
@@ -12,11 +12,11 @@ type Worker interface {
 }
 
 type WorkerBase struct {
-	config     *Config
-	client     *fasthttp.HostClient
+	config     *http_clients.Config
+	client     http_clients.GoPayLoaderClient
 	stats      Stats
-	req        *fasthttp.Request
-	resp       *fasthttp.Response
+	req        http_clients.Request
+	resp       http_clients.Response
 	middleware func(w *WorkerBase)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/domsolutions/gopayloader/config"
+	http_clients "github.com/domsolutions/gopayloader/pkgs/http-clients"
 	jwt_generator "github.com/domsolutions/gopayloader/pkgs/jwt-generator"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"github.com/pterm/pterm"
@@ -137,7 +138,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 
 	var conn uint
 	for conn = 0; conn < p.config.Conns; conn++ {
-		c := &worker.Config{
+		c := &http_clients.Config{
 			ReqURI:           p.config.ReqURI,
 			DisableKeepAlive: p.config.DisableKeepAlive,
 			SkipVerify:       p.config.SkipVerify,

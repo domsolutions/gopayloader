@@ -63,9 +63,7 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 		cancel()
 		select {
 		case results := <-resPayLoader:
-			if err := cli.Display(results); err != nil {
-				return err
-			}
+			cli.Display(results)
 		case err := <-errPayLoader:
 			// user may have cancelled during jwt generation, so there will be no results
 			return err
@@ -73,9 +71,7 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 	case err := <-errPayLoader:
 		return err
 	case results := <-resPayLoader:
-		if err := cli.Display(results); err != nil {
-			return err
-		}
+		cli.Display(results)
 	}
 
 	return nil

@@ -6,28 +6,29 @@ import (
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"os"
+	"strconv"
 	"time"
 )
 
-func Display(results *payloader.Results) error {
+func Display(results *payloader.Results) {
 	fmt.Print("Gopayloader results \n\n")
 
-	displayOverview(results)
-	displayRPS(results.RPS)
-	displayLatency(results.Latency)
-	displayResponseCodes(results.Responses)
-
-	// TODO merge into one table?
-
-	if len(results.Errors) > 0 {
-		displayErrors(results.Errors)
-	}
-	return nil
-}
-
-func displayOverview(results *payloader.Results) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
+
+	displayOverview(results, t)
+	displayRPS(results.RPS, t)
+	displayLatency(results.Latency, t)
+	displayResponseCodes(results.Responses, t)
+
+	if len(results.Errors) > 0 {
+		displayErrors(results.Errors, t)
+	}
+
+	t.Render()
+}
+
+func displayOverview(results *payloader.Results, t table.Writer) {
 	t.AppendHeader(table.Row{"Metric", "Result"})
 	t.AppendRows([]table.Row{
 		{"Total time", results.Total},
@@ -37,65 +38,41 @@ func displayOverview(results *payloader.Results) {
 		{"Failed requests", results.FailedReqs},
 	})
 	t.AppendSeparator()
-	t.Render()
 }
 
-func displayErrors(errors map[string]uint) {
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"Error", "Count"})
-
+func displayErrors(errors map[string]uint, t table.Writer) {
 	rows := make([]table.Row, 0)
 	for err, count := range errors {
-		rows = append(rows, table.Row{err, count})
+		rows = append(rows, table.Row{"Error; " + err, count})
 	}
-
 	t.AppendRows(rows)
 	t.AppendSeparator()
-	t.Render()
 }
 
-func displayResponseCodes(resps map[worker.ResponseCode]int64) {
-	response := table.NewWriter()
-	response.SetOutputMirror(os.Stdout)
-	response.AppendHeader(table.Row{"Response code", "Count"})
-
+func displayResponseCodes(resps map[worker.ResponseCode]int64, t table.Writer) {
 	rows := make([]table.Row, 0)
 	for code, freq := range resps {
-		rows = append(rows, table.Row{code, freq})
+		rows = append(rows, table.Row{"Response code; " + strconv.Itoa(int(code)), freq})
 	}
-
-	response.AppendRows(rows)
-	response.AppendSeparator()
-	response.Render()
+	t.AppendRows(rows)
+	t.AppendSeparator()
 }
 
-func displayLatency(results payloader.Latency) {
-	latency := table.NewWriter()
-	latency.SetOutputMirror(os.Stdout)
-	latency.AppendHeader(table.Row{"Latency", "Count"})
-
-	latency.AppendRows([]table.Row{
-		{"Average", results.Average},
-		{"Max", results.Max},
-		{"Min", results.Min},
+func displayLatency(results payloader.Latency, t table.Writer) {
+	t.AppendRows([]table.Row{
+		{"Average latency", results.Average},
+		{"Max latency", results.Max},
+		{"Min latency", results.Min},
 	})
-
-	latency.AppendSeparator()
-	latency.Render()
+	t.AppendSeparator()
 }
 
-func displayRPS(results payloader.RPS) {
-	rps := table.NewWriter()
-	rps.SetOutputMirror(os.Stdout)
-	rps.AppendHeader(table.Row{"RPS", "Count"})
-
-	rps.AppendRows([]table.Row{
-		{"Average", results.Average},
-		{"Max", results.Max},
-		{"Min", results.Min},
+func displayRPS(results payloader.RPS, t table.Writer) {
+	t.AppendRows([]table.Row{
+		{"Average RPS", results.Average},
+		{"Max RPS", results.Max},
+		{"Min RPS", results.Min},
 	})
 
-	rps.AppendSeparator()
-	rps.Render()
+	t.AppendSeparator()
 }
