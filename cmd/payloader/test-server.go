@@ -80,6 +80,7 @@ var runServerCmd = &cobra.Command{
 					}
 					if debug {
 						log.Printf("%s\n", c.Request.Header.String())
+						log.Printf("%s\n", c.Request.Body())
 					}
 				},
 			}

@@ -29,6 +29,9 @@ const (
 	argJWTEnable    = "jwt-enable"
 	argJWTKid       = "jwt-kid"
 	argClearCache   = "clear-cache"
+	argHeaders      = "headers"
+	argBody         = "body"
+	argBodyFile     = "body-file"
 )
 
 var (
@@ -53,6 +56,9 @@ var (
 	sendJWT          bool
 	jwtKID           string
 	clearCache       bool
+	headers          *[]string
+	body             string
+	bodyFile         string
 )
 
 var runCmd = &cobra.Command{
@@ -88,7 +94,10 @@ var runCmd = &cobra.Command{
 			jwtAud,
 			jwtHeader,
 			sendJWT,
-			clearCache)
+			clearCache,
+			*headers,
+			body,
+			bodyFile)
 	},
 }
 
@@ -103,13 +112,16 @@ func init() {
 	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 5*time.Second, "Read timeout")
 	runCmd.Flags().DurationVar(&writeTimeout, argWriteTimeout, 5*time.Second, "Write timeout")
 	runCmd.Flags().StringVarP(&method, argMethod, "m", "GET", "request method")
+	runCmd.Flags().StringVarP(&body, argBody, "b", "", "request body")
+	runCmd.Flags().StringVar(&bodyFile, argBodyFile, "", "read request body from file")
 	runCmd.Flags().BoolVarP(&verbose, argVerbose, "v", false, "verbose - slows down RPS slightly for long running tests")
 	runCmd.Flags().DurationVar(&ticker, argTicker, time.Second, "How often to print results while running in verbose mode")
 
 	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
 
-	// TODO basic auth, set any header, set host, post body
+	headers = runCmd.Flags().StringSliceP(argHeaders, "H", []string{}, "headers to send in request, can have multiple i.e -H 'content-type:application/json' -H' connection:close'")
+
 	// TODO in stats, bytes sent/received... received means reading body, possibly rps reduce
 
 	runCmd.Flags().StringVar(&jwtKID, argJWTKid, "", "JWT KID")
@@ -123,6 +135,7 @@ func init() {
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
 	runCmd.MarkFlagsRequiredTogether(argJWTKey, argJWTEnable)
+	runCmd.MarkFlagsMutuallyExclusive(argBody, argBodyFile)
 
 	rootCmd.AddCommand(runCmd)
 }

@@ -153,6 +153,9 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			Method:           p.config.Method,
 			Verbose:          p.config.Verbose,
 			HTTPV2:           p.config.HTTPV2,
+			Headers:          p.config.Headers,
+			Body:             p.config.Body,
+			BodyFile:         p.config.BodyFile,
 		}
 
 		// evenly distribute remainder reqs
@@ -200,8 +203,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker, reqTarget int, endTime time.Duration) {
 	tick := time.NewTicker(p.config.Ticker)
 	var stats worker.Stats
-	var prevSuccess int64 = 0
-	var prevError int64 = 0
+	var prevSuccess, prevError int64 = 0, 0
 	var progress *pterm.ProgressbarPrinter
 
 	displayStats, err := pterm.DefaultArea.Start(

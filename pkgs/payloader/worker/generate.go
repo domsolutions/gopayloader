@@ -3,9 +3,12 @@ package worker
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"github.com/dgrr/http2"
 	"github.com/valyala/fasthttp"
 	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -36,6 +39,9 @@ type Config struct {
 	JwtStreamReceiver <-chan string
 	JwtStreamErr      <-chan error
 	JWTHeader         string
+	Headers           []string
+	Body              string
+	BodyFile          string
 }
 
 type ResponseCode int
@@ -65,7 +71,10 @@ func NewWorker(config *Config) (Worker, error) {
 	}
 
 	resp := &fasthttp.Response{}
-	req := getReq(config)
+	req, err := getReq(config)
+	if err != nil {
+		return nil, err
+	}
 
 	if config.ReqLimitedOnly() {
 		if config.JwtStreamReceiver != nil {
@@ -87,7 +96,7 @@ func NewWorker(config *Config) (Worker, error) {
 	return w, nil
 }
 
-func getReq(config *Config) *fasthttp.Request {
+func getReq(config *Config) (*fasthttp.Request, error) {
 	req := &fasthttp.Request{}
 	req.SetRequestURI(config.ReqURI)
 	if config.DisableKeepAlive {
@@ -96,7 +105,25 @@ func getReq(config *Config) *fasthttp.Request {
 	if config.Method != "GET" {
 		req.Header.SetMethodBytes([]byte(config.Method))
 	}
-	return req
+	if len(config.Headers) > 0 {
+		for _, h := range config.Headers {
+			header := strings.Split(h, ":")
+			req.Header.Set(header[0], header[1])
+		}
+	}
+
+	if len(config.Body) > 0 {
+		req.SetBodyString(config.Body)
+	}
+
+	if len(config.BodyFile) > 0 {
+		bb, err := os.ReadFile(config.BodyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read body file %v", err)
+		}
+		req.SetBody(bb)
+	}
+	return req, nil
 }
 
 func jwtMiddleware(w *WorkerBase) {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -33,9 +34,12 @@ type Config struct {
 	JwtHeader        string
 	SendJWT          bool
 	ClearCache       bool
+	Headers          []string
+	Body             string
+	BodyFile         string
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool, headers []string, body, bodyFile string) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
@@ -60,6 +64,9 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		JwtHeader:        jwtHeader,
 		SendJWT:          sendJWT,
 		ClearCache:       clearCache,
+		Headers:          headers,
+		Body:             body,
+		BodyFile:         bodyFile,
 	}
 }
 
@@ -117,6 +124,24 @@ func (c *Config) Validate() error {
 				}
 				return fmt.Errorf("config: jwt key error checking file exists; %v", err)
 			}
+		}
+	}
+
+	if len(c.Headers) > 0 {
+		for _, h := range c.Headers {
+			if !strings.Contains(h, ":") {
+				return fmt.Errorf("header %s does not contain : ", h)
+			}
+		}
+	}
+
+	if len(c.BodyFile) > 0 {
+		_, err := os.OpenFile(c.BodyFile, os.O_RDONLY, os.ModePerm)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return errors.New("config: body file does not exist")
+			}
+			return fmt.Errorf("config: body file error checking file exists; %v", err)
 		}
 	}
 
