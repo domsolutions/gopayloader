@@ -137,6 +137,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 
 	var conn uint
 	for conn = 0; conn < p.config.Conns; conn++ {
+
 		c := &worker.Config{
 			ReqURI:           p.config.ReqURI,
 			DisableKeepAlive: p.config.DisableKeepAlive,
@@ -153,14 +154,17 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			Method:           p.config.Method,
 			Verbose:          p.config.Verbose,
 			HTTPV2:           p.config.HTTPV2,
-			JWTHeader:        p.config.JwtHeader,
 		}
-		if conn == 0 {
-			c.ReqTarget += remainderReqs
+
+		if remainderReqs > 0 {
+			c.ReqTarget++
 		}
+		remainderReqs--
 
 		if p.config.SendJWT {
 			c.JwtStreamReceiver = jwtStream
+			c.JwtStreamErr = jwtStreamErrs
+			c.JWTHeader = p.config.JwtHeader
 		}
 
 		w, err := worker.NewWorker(c)
@@ -170,14 +174,6 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 
 		workers[conn] = w
 		go w.Run(workersComplete)
-	}
-
-	if p.config.SendJWT {
-		go func() {
-			err := <-jwtStreamErrs
-			pterm.Error.Printf("jwt generator failure; %v", err)
-			// TODO handle error
-		}()
 	}
 
 	p.startWorkers(startTrigger)
@@ -218,22 +214,9 @@ func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker
 
 	defer displayStats.Stop()
 
-	if endTime != 0 {
-		progress, err = pterm.DefaultProgressbar.
-			WithTotal(int(endTime.Seconds())).
-			WithShowElapsedTime().
-			WithElapsedTimeRoundingFactor(time.Second).
-			WithTitle("Sending requests for " + endTime.String()).Start()
-		if err != nil {
-			pterm.Error.Printf("Failed to create progress bar, got error; %v \n", err)
-			return
-		}
-	} else {
-		progress, err = pterm.DefaultProgressbar.WithTotal(reqTarget).WithTitle("Sending " + strconv.Itoa(reqTarget) + " requests").Start()
-		if err != nil {
-			pterm.Error.Printf("Failed to create progress bar, got error; %v \n", err)
-			return
-		}
+	progress, err = p.getProgressBar(endTime, reqTarget)
+	if err != nil {
+		return
 	}
 
 	for {
@@ -268,6 +251,28 @@ func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker
 			prevError = errs
 		}
 	}
+}
+
+func (p *PayLoader) getProgressBar(endTime time.Duration, reqTarget int) (*pterm.ProgressbarPrinter, error) {
+	if endTime != 0 {
+		progress, err := pterm.DefaultProgressbar.
+			WithTotal(int(endTime.Seconds())).
+			WithShowElapsedTime().
+			WithElapsedTimeRoundingFactor(time.Second).
+			WithTitle("Sending requests for " + endTime.String()).Start()
+		if err != nil {
+			pterm.Error.Printf("Failed to create progress bar, got error; %v \n", err)
+			return nil, err
+		}
+		return progress, nil
+	}
+
+	progress, err := pterm.DefaultProgressbar.WithTotal(reqTarget).WithTitle("Sending " + strconv.Itoa(reqTarget) + " requests").Start()
+	if err != nil {
+		pterm.Error.Printf("Failed to create progress bar, got error; %v \n", err)
+		return nil, err
+	}
+	return progress, nil
 }
 
 func (p *PayLoader) Run() (*Results, error) {

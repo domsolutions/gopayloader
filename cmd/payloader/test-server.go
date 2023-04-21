@@ -70,9 +70,11 @@ var runServerCmd = &cobra.Command{
 		log.Println("Starting HTTP server on:", addr)
 
 		if fasthttp1 {
+			var err error
+
 			server := fasthttp.Server{
 				Handler: func(c *fasthttp.RequestCtx) {
-					_, err := c.WriteString(response)
+					_, err = c.WriteString(response)
 					if err != nil {
 						log.Println(err)
 					}
@@ -95,9 +97,16 @@ var runServerCmd = &cobra.Command{
 				WriteTimeout: 10 * time.Second,
 				TLSConfig:    tlsConfig(),
 			}
+			var err error
 
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte(response))
+				_, err = w.Write([]byte(response))
+				if err != nil {
+					log.Println(err)
+				}
+				if debug {
+					log.Printf("%+v\n", r.Header)
+				}
 			})
 
 			if err := server.ListenAndServeTLS("", ""); err != nil {
@@ -106,8 +115,16 @@ var runServerCmd = &cobra.Command{
 		}
 
 		if httpv3 {
+			var err error
+
 			http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte(response))
+				_, err = w.Write([]byte(response))
+				if err != nil {
+					log.Println(err)
+				}
+				if debug {
+					log.Printf("%+v\n", r.Header)
+				}
 			}))
 			if err := http3.ListenAndServeQUIC(addr, serverCert, privateKey, nil); err != nil {
 				log.Fatal(err)

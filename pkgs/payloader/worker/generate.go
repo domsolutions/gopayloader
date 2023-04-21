@@ -34,6 +34,7 @@ type Config struct {
 	Verbose           bool
 	HTTPV2            bool
 	JwtStreamReceiver <-chan string
+	JwtStreamErr      <-chan error
 	JWTHeader         string
 }
 
@@ -64,31 +65,13 @@ func NewWorker(config *Config) (Worker, error) {
 	}
 
 	resp := &fasthttp.Response{}
-	req := &fasthttp.Request{}
-	req.SetRequestURI(config.ReqURI)
-	if config.DisableKeepAlive {
-		req.Header.Add(fasthttp.HeaderConnection, "close")
-	}
-	if config.Method != "GET" {
-		req.Header.SetMethodBytes([]byte(config.Method))
-	}
+	req := getReq(config)
 
 	if config.ReqLimitedOnly() {
 		if config.JwtStreamReceiver != nil {
-			return &WorkerFixedReqsJwts{
-				WorkerJWTBase: &WorkerJWTBase{
-					config: config,
-					req:    req,
-					resp:   resp,
-					client: client,
-					stats: Stats{
-						Responses: make(map[ResponseCode]int64),
-						Errors:    make(map[string]uint),
-					},
-					jwtHeader: config.JWTHeader,
-					jwtStream: config.JwtStreamReceiver,
-				},
-			}, nil
+			w := &WorkerFixedReqs{baseConfig(config, client, req, resp)}
+			w.middleware = jwtMiddleware
+			return w, nil
 		}
 		return &WorkerFixedReqs{baseConfig(config, client, req, resp)}, nil
 	}
@@ -97,8 +80,36 @@ func NewWorker(config *Config) (Worker, error) {
 		return &WorkerFixedTime{baseConfig(config, client, req, resp)}, nil
 	}
 
-	// TODO jwt header for fixed time/reqs.... refactor
-	return &WorkerFixedTimeRequests{baseConfig(config, client, req, resp)}, nil
+	w := &WorkerFixedTimeRequests{baseConfig(config, client, req, resp)}
+	if config.JwtStreamReceiver != nil {
+		w.middleware = jwtMiddleware
+	}
+	return w, nil
+}
+
+func getReq(config *Config) *fasthttp.Request {
+	req := &fasthttp.Request{}
+	req.SetRequestURI(config.ReqURI)
+	if config.DisableKeepAlive {
+		req.Header.Add(fasthttp.HeaderConnection, "close")
+	}
+	if config.Method != "GET" {
+		req.Header.SetMethodBytes([]byte(config.Method))
+	}
+	return req
+}
+
+func jwtMiddleware(w *WorkerBase) {
+	select {
+	case <-w.config.Ctx.Done():
+		// user cancelled
+		return
+	//case err := <-w.config.JwtStreamErr:
+	//	pterm.Error.Printf("Failed to get jwts from cache, got error; %v \n", err)
+	//	return TODO fix
+	case jwt := <-w.config.JwtStreamReceiver:
+		w.req.Header.Set(w.config.JWTHeader, jwt)
+	}
 }
 
 func baseConfig(config *Config, client *fasthttp.HostClient, req *fasthttp.Request, resp *fasthttp.Response) *WorkerBase {

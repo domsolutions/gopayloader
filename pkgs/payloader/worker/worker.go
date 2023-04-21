@@ -12,11 +12,12 @@ type Worker interface {
 }
 
 type WorkerBase struct {
-	config *Config
-	client *fasthttp.HostClient
-	stats  Stats
-	req    *fasthttp.Request
-	resp   *fasthttp.Response
+	config     *Config
+	client     *fasthttp.HostClient
+	stats      Stats
+	req        *fasthttp.Request
+	resp       *fasthttp.Response
+	middleware func(w *WorkerBase)
 }
 
 func (w *WorkerBase) run() {
@@ -42,6 +43,10 @@ func (w *WorkerBase) process() error {
 			w.stats.Reqs = append(w.stats.Reqs, ReqLatency{begin, time.Now().UnixNano()})
 		}
 	}()
+
+	if w.middleware != nil {
+		w.middleware(w)
+	}
 
 	if err = w.client.Do(w.req, w.resp); err != nil {
 		return err

@@ -43,23 +43,31 @@ func (c *cache) get(count int64) (<-chan string, <-chan error) {
 	// set to beginning of file to read jwt amount
 	if _, err := c.f.Seek(0, 0); err != nil {
 		errs <- err
+		close(errs)
+		close(recv)
 		return recv, errs
 	}
 
 	// scan first line to skip as not a jwt but is int64 representing number of jwts
 	if !c.scanner.Scan() {
 		errs <- fmt.Errorf("jwt_generator: retrieving; not able to read first line of cache; %v", c.scanner.Err())
+		close(errs)
+		close(recv)
 		return recv, errs
 	}
 
 	meta := c.scanner.Bytes()
 	if len(meta) < 8 {
 		errs <- fmt.Errorf("jwt_generator: retrieving; corrupt jwt cache, wanted 8 bytes got %d", len(meta))
+		close(errs)
+		close(recv)
 		return recv, errs
 	}
 
 	if count > int64(binary.LittleEndian.Uint64(meta[0:8])) {
 		errs <- errors.New("jwt_generator: retrieving; not enough jwts stored in cache")
+		close(errs)
+		close(recv)
 		return recv, errs
 	}
 
@@ -80,11 +88,11 @@ func (c *cache) retrieve(count int64, recv chan<- string, errs chan<- error) {
 		// reached EOF or err
 		if err := c.scanner.Err(); err != nil {
 			errs <- err
+			close(errs)
 		}
 		break
 	}
 	close(recv)
-	close(errs)
 }
 
 func (c *cache) save(tokens []string) error {

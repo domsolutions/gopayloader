@@ -1,6 +1,7 @@
 package payloader
 
 import (
+	"errors"
 	"github.com/domsolutions/gopayloader/wrapper"
 	"github.com/spf13/cobra"
 	"time"
@@ -13,7 +14,6 @@ const (
 	argKeepAlive    = "disable-keep-alive"
 	argVerifySigner = "skip-verify"
 	argTime         = "time"
-	argHost         = "host"
 	argMTLSKey      = "mtls-key"
 	argMTLSCert     = "mtls-cert"
 	argReadTimeout  = "read-timeout"
@@ -33,7 +33,6 @@ const (
 
 var (
 	method           string
-	reqURI           string
 	mTLSCert         string
 	mTLSKey          string
 	duration         time.Duration
@@ -57,10 +56,17 @@ var (
 )
 
 var runCmd = &cobra.Command{
-	Use:   "run",
+	Use:   "run <host>",
 	Short: "Load test HTTP/S server",
-	Long:  ``,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return errors.New("no request uri specified as argument")
+		}
+		return nil
+	},
+	Long: ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		reqURI := args[0]
 		return wrapper.RunGoPayLoader(reqURI,
 			mTLSCert,
 			mTLSKey,
@@ -96,7 +102,6 @@ func init() {
 	runCmd.Flags().DurationVarP(&duration, argTime, "t", 0, "Execution time window, if used with -r will uniformly distribute reqs within time window, without -r reqs are unlimited")
 	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 5*time.Second, "Read timeout")
 	runCmd.Flags().DurationVar(&writeTimeout, argWriteTimeout, 5*time.Second, "Write timeout")
-	runCmd.Flags().StringVar(&reqURI, argHost, "", "Request URI to run load against")
 	runCmd.Flags().StringVarP(&method, argMethod, "m", "GET", "request method")
 	runCmd.Flags().BoolVarP(&verbose, argVerbose, "v", false, "verbose - slows down RPS slightly for long running tests")
 	runCmd.Flags().DurationVar(&ticker, argTicker, time.Second, "How often to print results while running in verbose mode")
@@ -119,8 +124,5 @@ func init() {
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
 	runCmd.MarkFlagsRequiredTogether(argJWTKey, argJWTEnable)
 
-	if err := runCmd.MarkFlagRequired(argHost); err != nil {
-		panic(err)
-	}
 	rootCmd.AddCommand(runCmd)
 }
