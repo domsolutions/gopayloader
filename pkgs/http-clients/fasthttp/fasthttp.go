@@ -28,8 +28,9 @@ func (fh *Req) SetBody(body []byte) {
 	fh.req.SetBody(body)
 }
 
-func (fh *Req) SetRequestURI(uri string) {
+func (fh *Req) SetRequestURI(uri string) error {
 	fh.req.SetRequestURI(uri)
+	return nil
 }
 
 func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error {

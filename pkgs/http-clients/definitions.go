@@ -10,7 +10,7 @@ type Request interface {
 	SetHeader(key, val string)
 	SetMethod(method string)
 	SetBody(body []byte)
-	SetRequestURI(uri string)
+	SetRequestURI(uri string) error
 }
 
 type Response interface {
@@ -45,6 +45,8 @@ type Config struct {
 	Headers           []string
 	Body              string
 	BodyFile          string
+	NetHTTP           bool
+	HTTPV3            bool
 }
 
 func (c *Config) ReqLimitedOnly() bool {

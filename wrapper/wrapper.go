@@ -13,7 +13,7 @@ import (
 	"github.com/domsolutions/gopayloader/pkgs/payloader"
 )
 
-func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool, headers []string, body, bodyFile string) error {
+func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool, headers []string, body, bodyFile string, NetHTTP, http3 bool) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -31,7 +31,7 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 		method,
 		verbose,
 		ticker,
-		HTTPV2, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader, sendJWT, clearCache, headers, body, bodyFile)
+		HTTPV2, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader, sendJWT, clearCache, headers, body, bodyFile, NetHTTP, http3)
 	if err := conf.Validate(); err != nil {
 		return err
 	}

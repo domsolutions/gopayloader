@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"crypto/tls"
 	"github.com/domsolutions/gopayloader/pkgs/http-clients"
+	"github.com/quic-go/quic-go/http3"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type Client struct {
@@ -39,13 +41,17 @@ func (r *Req) SetBody(body []byte) {
 	}
 }
 
-func (r *Req) SetRequestURI(uri string) {
-	r.req.RequestURI = uri
+func (r *Req) SetRequestURI(uri string) error {
+	u, err := url.ParseRequestURI(uri)
+	if err != nil {
+		return err
+	}
+	r.req.URL = u
+	return nil
 }
 
 func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error {
 	resptemp, err := fh.client.Do(req.(*Req).req)
-	// TODO check this works!!
 	resp.(*Resp).resp = resptemp
 	return err
 }
@@ -80,4 +86,28 @@ func GetNetHTTPClient(config *http_clients.Config) (http_clients.GoPayLoaderClie
 		Timeout: config.ReadTimeout + config.WriteTimeout,
 	}}, nil
 
+}
+
+func GetNetHTTP3Client(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: config.SkipVerify,
+	}
+
+	if config.MTLSCert != "" && config.MTLSKey != "" {
+		cert, err := tls.LoadX509KeyPair(config.MTLSCert, config.MTLSKey)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	roundTripper := &http3.RoundTripper{
+		TLSClientConfig: tlsConfig,
+	}
+
+	return &Client{
+		client: &http.Client{
+			Transport: roundTripper,
+		},
+	}, nil
 }

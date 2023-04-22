@@ -32,6 +32,8 @@ const (
 	argHeaders      = "headers"
 	argBody         = "body"
 	argBodyFile     = "body-file"
+	argNetHTTP      = "net-http"
+	argHTTP3        = "http-3"
 )
 
 var (
@@ -59,6 +61,8 @@ var (
 	headers          *[]string
 	body             string
 	bodyFile         string
+	netHTTP          bool
+	http3            bool
 )
 
 var runCmd = &cobra.Command{
@@ -97,7 +101,9 @@ var runCmd = &cobra.Command{
 			clearCache,
 			*headers,
 			body,
-			bodyFile)
+			bodyFile,
+			netHTTP,
+			http3)
 	},
 }
 
@@ -117,11 +123,14 @@ func init() {
 	runCmd.Flags().BoolVarP(&verbose, argVerbose, "v", false, "verbose - slows down RPS slightly for long running tests")
 	runCmd.Flags().DurationVar(&ticker, argTicker, time.Second, "How often to print results while running in verbose mode")
 	headers = runCmd.Flags().StringSliceP(argHeaders, "H", []string{}, "headers to send in request, can have multiple i.e -H 'content-type:application/json' -H' connection:close'")
+	runCmd.Flags().BoolVar(&netHTTP, argNetHTTP, false, "Use standard net/http HTTP client package")
+	runCmd.Flags().BoolVar(&http3, argHTTP3, false, "Use HTTP3 client")
 
 	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
 
 	// TODO in stats, bytes sent/received... received means reading body, possibly rps reduce
+	// TODO sort out http client flags
 
 	runCmd.Flags().StringVar(&jwtKID, argJWTKid, "", "JWT KID")
 	runCmd.Flags().StringVar(&jwtKey, argJWTKey, "", "JWT signing private key path")

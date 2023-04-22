@@ -4,6 +4,7 @@ import (
 	"fmt"
 	http_clients "github.com/domsolutions/gopayloader/pkgs/http-clients"
 	"github.com/domsolutions/gopayloader/pkgs/http-clients/fasthttp"
+	"github.com/domsolutions/gopayloader/pkgs/http-clients/nethttp"
 	"os"
 	"strings"
 )
@@ -61,7 +62,10 @@ func NewWorker(config *http_clients.Config) (Worker, error) {
 
 func getReq(client http_clients.GoPayLoaderClient, config *http_clients.Config) (http_clients.Request, error) {
 	req := client.NewReq()
-	req.SetRequestURI(config.ReqURI)
+	if err := req.SetRequestURI(config.ReqURI); err != nil {
+		return nil, err
+	}
+
 	if config.DisableKeepAlive {
 		req.SetHeader("Connection", "close")
 	}
@@ -116,6 +120,12 @@ func baseConfig(config *http_clients.Config, client http_clients.GoPayLoaderClie
 }
 
 func getClient(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
-	// TODO return other clients; net/http, http3
-	return fasthttp.GetFastHTTPClient(config)
+	switch true {
+	case config.NetHTTP:
+		return nethttp.GetNetHTTPClient(config)
+	case config.HTTPV3:
+		return nethttp.GetNetHTTP3Client(config)
+	default:
+		return fasthttp.GetFastHTTPClient(config)
+	}
 }

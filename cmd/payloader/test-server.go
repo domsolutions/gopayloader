@@ -1,11 +1,17 @@
 package payloader
 
 import (
+	"bufio"
 	"crypto/tls"
 	"errors"
-	"github.com/quic-go/quic-go/http3"
+	"fmt"
+	"github.com/quic-go/quic-go"
+	httpv3server "github.com/quic-go/quic-go/http3"
+	"github.com/quic-go/quic-go/logging"
+	"github.com/quic-go/quic-go/qlog"
 	"github.com/spf13/cobra"
 	"github.com/valyala/fasthttp"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -118,16 +124,47 @@ var runServerCmd = &cobra.Command{
 		if httpv3 {
 			var err error
 
-			http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				_, err = w.Write([]byte(response))
-				if err != nil {
-					log.Println(err)
-				}
-				if debug {
-					log.Printf("%+v\n", r.Header)
-				}
-			}))
-			if err := http3.ListenAndServeQUIC(addr, serverCert, privateKey, nil); err != nil {
+			quicConf := &quic.Config{}
+			if debug {
+				quicConf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
+					filename := fmt.Sprintf("server_%x.qlog", connID)
+					f, err := os.Create(filename)
+					if err != nil {
+						log.Fatal(err)
+					}
+					log.Printf("Creating qlog file %s.\n", filename)
+					return &MyWriteCloser{
+						bufio.NewWriter(f),
+					}
+				})
+			}
+
+			server := httpv3server.Server{
+				//EnableDatagrams: true,
+				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					_, err = w.Write([]byte(response))
+					if err != nil {
+						log.Println(err)
+					}
+					if debug {
+						log.Printf("%+v\n", r.Header)
+					}
+				}),
+				Addr:       addr,
+				QuicConfig: quicConf,
+			}
+
+			//
+			//http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			//	_, err = w.Write([]byte(response))
+			//	if err != nil {
+			//		log.Println(err)
+			//	}
+			//	if debug {
+			//		log.Printf("%+v\n", r.Header)
+			//	}
+			//}))
+			if err := server.ListenAndServeTLS(serverCert, privateKey); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -140,8 +177,17 @@ func init() {
 	runServerCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port")
 	runServerCmd.Flags().IntVarP(&responseSize, "response-size", "s", 10, "Response size")
 	runServerCmd.Flags().BoolVar(&fasthttp1, "fasthttp-1", false, "Fasthttp HTTP/1.1 server")
-	runServerCmd.Flags().BoolVar(&nethttp2, "nethttp-2", false, "net/http HTTP/2 server")
+	runServerCmd.Flags().BoolVar(&nethttp2, "netHTTP-2", false, "net/http HTTP/2 server")
 	runServerCmd.Flags().BoolVar(&httpv3, "http-3", false, "HTTP/3 server")
 	runServerCmd.Flags().BoolVarP(&debug, "verbose", "v", false, "print logs")
 	rootCmd.AddCommand(runServerCmd)
+}
+
+type MyWriteCloser struct {
+	*bufio.Writer
+}
+
+func (mwc *MyWriteCloser) Close() error {
+	// Noop
+	return nil
 }

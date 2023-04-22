@@ -37,9 +37,11 @@ type Config struct {
 	Headers          []string
 	Body             string
 	BodyFile         string
+	NetHTTP          bool
+	HTTP3            bool
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool, headers []string, body, bodyFile string) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool, headers []string, body, bodyFile string, NetHTTP, HTTP3 bool) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
@@ -67,6 +69,8 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		Headers:          headers,
 		Body:             body,
 		BodyFile:         bodyFile,
+		NetHTTP:          NetHTTP,
+		HTTP3:            HTTP3,
 	}
 }
 

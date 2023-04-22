@@ -157,6 +157,8 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			Headers:          p.config.Headers,
 			Body:             p.config.Body,
 			BodyFile:         p.config.BodyFile,
+			NetHTTP:          p.config.NetHTTP,
+			HTTPV3:           p.config.HTTP3,
 		}
 
 		// evenly distribute remainder reqs
