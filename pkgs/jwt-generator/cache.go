@@ -27,6 +27,7 @@ func newCache(f *os.File) (*cache, error) {
 			return nil, fmt.Errorf("jwt_generator: corrupt jwt cache, wanted 8 bytes got %d", len(meta))
 		}
 		c.count = int64(binary.LittleEndian.Uint64(meta[0:8]))
+
 		return &c, nil
 	}
 	return &c, nil

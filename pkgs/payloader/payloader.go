@@ -102,9 +102,11 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 
 	if p.config.SendJWT && p.config.ReqTarget != 0 {
 		if jwtSaveDir == "" {
-			pterm.Error.Println("Cache directory couldn't be determined, can't generate jwts")
+			pterm.Error.Println("Can't save jwts if no cache directory")
 			return nil, errors.New("cache directory couldn't be determined")
 		}
+
+		pterm.Info.Printf("Sending jwts with requests, checking for jwts in cache\n")
 
 		jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
 			Ctx:        p.config.Ctx,
@@ -200,7 +202,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	}
 
 	workersComplete.Wait()
-	pterm.Debug.Printf("\nPayload complete, calculating results\n")
+	pterm.Success.Printf("Payload complete, calculating results\n")
 
 	p.stopTimer()
 	if p.config.Verbose {

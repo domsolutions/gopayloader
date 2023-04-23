@@ -51,17 +51,17 @@ func (r *Req) Size() int64 {
 	return size
 }
 
-func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error {
-	resptemp, err := fh.client.Do(req.(*Req).req)
+func (c *Client) Do(req http_clients.Request, resp http_clients.Response) error {
+	resptemp, err := c.client.Do(req.(*Req).req)
 	resp.(*Resp).resp = resptemp
 	return err
 }
 
-func (fh *Client) NewResponse() http_clients.Response {
+func (c *Client) NewResponse() http_clients.Response {
 	return &Resp{}
 }
 
-func (fh *Client) NewReq(method, url string) (http_clients.Request, error) {
+func (c *Client) NewReq(method, url string) (http_clients.Request, error) {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
@@ -106,6 +106,8 @@ func GetNetHTTP3Client(config *http_clients.Config) (http_clients.GoPayLoaderCli
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
+
+	// todo timeout configs
 
 	roundTripper := &http3.RoundTripper{
 		TLSClientConfig: tlsConfig,

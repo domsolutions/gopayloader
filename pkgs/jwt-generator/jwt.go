@@ -89,6 +89,9 @@ func (j *JWTGenerator) Generate(reqJwtCount int64, dir string, retrying bool) er
 		return j.Generate(reqJwtCount, dir, true)
 	}
 	j.config.store = cache
+	if cache.count > 0 {
+		pterm.Info.Printf("Found %d jwts in cache\n", cache.count)
+	}
 
 	if err := j.batchGenSave(reqJwtCount, batchSize); err != nil {
 		return err
@@ -117,7 +120,7 @@ func (j *JWTGenerator) batchGenSave(reqJwtAmount, batchSize int64) error {
 	errs := make(chan error)
 	resp := make(chan []string, workers)
 
-	pterm.Debug.Printf("Generating %d JWTs in batch\n", limit)
+	pterm.Info.Printf("Generating batch of %d JWTs and saving to disk\n", limit)
 	for i := 0; i < workers; i++ {
 		if i == 0 {
 			go j.generate(jobs+(limit%int64(workers)), errs, resp)

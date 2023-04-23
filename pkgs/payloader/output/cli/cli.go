@@ -5,13 +5,15 @@ import (
 	"github.com/domsolutions/gopayloader/pkgs/payloader"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/pterm/pterm"
 	"os"
 	"strconv"
 	"time"
 )
 
 func Display(results *payloader.Results) {
-	fmt.Print("Gopayloader results \n\n")
+	pterm.Success.Printf("Gopayloader results \n\n")
+	fmt.Println("")
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
