@@ -124,7 +124,9 @@ var runServerCmd = &cobra.Command{
 		if httpv3 {
 			var err error
 
-			quicConf := &quic.Config{}
+			quicConf := &quic.Config{
+				EnableDatagrams: true,
+			}
 			if debug {
 				quicConf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
 					filename := fmt.Sprintf("server_%x.qlog", connID)

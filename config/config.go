@@ -95,6 +95,9 @@ func (c *Config) Validate() error {
 	if int64(c.Conns) > c.ReqTarget && c.ReqTarget != 0 && c.Duration != 0 {
 		return errConnLimit
 	}
+	if c.Conns == 0 {
+		return errors.New("0 connections not allowed")
+	}
 
 	if c.MTLSKey != "" {
 		_, err := os.OpenFile(c.MTLSKey, os.O_RDONLY, os.ModePerm)

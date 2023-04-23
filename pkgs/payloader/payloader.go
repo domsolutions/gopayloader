@@ -48,6 +48,13 @@ type Results struct {
 	Latency       Latency
 	Responses     map[worker.ResponseCode]int64
 	Errors        map[string]uint
+	ReqByteSize   ReqByteSize
+}
+
+type ReqByteSize struct {
+	Single    int64
+	Total     int64
+	PerSecond int64
 }
 
 type RPS struct {
@@ -117,8 +124,6 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 		jwtStream, jwtStreamErrs = jwt.JWTS(p.config.ReqTarget)
 	}
 
-	// TODO machine has 8 cores but tests don't use all of them... why? maybe as http/1.1 waiting for response
-
 	reqsPerWorker := p.config.ReqTarget / int64(p.config.Conns)
 	remainderReqs := p.config.ReqTarget % int64(p.config.Conns)
 
@@ -131,7 +136,10 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	var reqEvery time.Duration
 	if p.config.Duration != 0 && p.config.ReqTarget != 0 {
 		reqEvery = time.Duration(float64(p.config.Duration) / (float64(p.config.ReqTarget) / float64(p.config.Conns)))
-		pterm.Debug.Printf("Running requests every %s for every %d connection/s\n", reqEvery.String(), int(p.config.Conns))
+		pterm.Info.Printf("Running requests every %s for every %d connection for total %d requests/s against %s\n",
+			reqEvery.String(), int(p.config.Conns), p.config.ReqTarget, p.config.ReqURI)
+	} else {
+		pterm.Info.Printf("Running %d requests with %d connection/s against %s\n", p.config.ReqTarget, int(p.config.Conns), p.config.ReqURI)
 	}
 
 	workers := make([]worker.Worker, p.config.Conns)

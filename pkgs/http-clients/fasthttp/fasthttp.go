@@ -20,6 +20,14 @@ func (fh *Req) SetHeader(key, val string) {
 	fh.req.Header.Set(key, val)
 }
 
+func (fh *Req) Size() int64 {
+	size := len(fh.req.Body()) + 2 // 2 for the \r\n that separates the headers and body.
+	fh.req.Header.VisitAll(func(key, value []byte) {
+		size += len(key) + len(value) + 2 // 2 for the \r\n that separates the headers.
+	})
+	return int64(size)
+}
+
 func (fh *Req) SetMethod(method string) {
 	fh.req.Header.SetMethodBytes([]byte(method))
 }

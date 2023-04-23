@@ -18,6 +18,7 @@ func Display(results *payloader.Results) {
 
 	displayOverview(results, t)
 	displayRPS(results.RPS, t)
+	displayReqSize(results.ReqByteSize, t)
 	displayLatency(results.Latency, t)
 	displayResponseCodes(results.Responses, t)
 
@@ -37,6 +38,15 @@ func displayOverview(results *payloader.Results, t table.Writer) {
 		{"Completed requests", results.CompletedReqs},
 		{"Failed requests", results.FailedReqs},
 	})
+	t.AppendSeparator()
+}
+
+func displayReqSize(req payloader.ReqByteSize, t table.Writer) {
+	rows := make([]table.Row, 0)
+	rows = append(rows, table.Row{"Req size (bytes)", req.Single})
+	rows = append(rows, table.Row{"Req size/second (MB)", fmt.Sprintf("%.3f", float64(req.PerSecond)/(1024*1024))})
+	rows = append(rows, table.Row{"Req total size (MB)", fmt.Sprintf("%.3f", float64(req.Total)/float64(1024*1024))})
+	t.AppendRows(rows)
 	t.AppendSeparator()
 }
 
@@ -69,7 +79,7 @@ func displayLatency(results payloader.Latency, t table.Writer) {
 
 func displayRPS(results payloader.RPS, t table.Writer) {
 	t.AppendRows([]table.Row{
-		{"Average RPS", results.Average},
+		{"Average RPS", fmt.Sprintf("%.3f", results.Average)},
 		{"Max RPS", results.Max},
 		{"Min RPS", results.Min},
 	})

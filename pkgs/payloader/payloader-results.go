@@ -51,42 +51,8 @@ func (p *PayloaderResults) ComputeResults(workers []worker.Worker) (*Results, er
 
 	}
 
-	// TODO optimise 3 loops
 	pterm.Debug.Println("Calculating max/min RPS")
-	reqsPerSecond := make(map[time.Duration]uint64)
-	for t := results.Start; t.Before(results.End); t = t.Add(500 * time.Millisecond) {
-		begin := t.UnixNano()
-		end := t.Add(time.Second).UnixNano()
-
-		for _, w := range workers {
-			for _, l := range w.Stats().Reqs {
-				if l[worker.ReqBegin] >= begin && l[worker.ReqEnd] <= end {
-					if _, ok := reqsPerSecond[time.Duration(t.Unix())]; ok {
-						reqsPerSecond[time.Duration(t.Unix())]++
-					} else {
-						reqsPerSecond[time.Duration(t.Unix())] = 1
-					}
-				}
-			}
-		}
-	}
-
-	// TODO standard deviation, histogram
-
-	if len(reqsPerSecond) > 0 {
-		results.RPS.Min = reqsPerSecond[0]
-
-		for _, val := range reqsPerSecond {
-			if val > results.RPS.Max {
-				results.RPS.Max = val
-			}
-			if val < results.RPS.Min {
-				results.RPS.Min = val
-			}
-		}
-
-		results.RPS.Average = float64(results.CompletedReqs) / (float64(results.Total) / float64(time.Second))
-	}
+	calcMaxMinRPS(results, workers)
 
 	if len(results.LatencyPerReq) > 0 {
 		pterm.Debug.Println("Calculating max/min latency")
@@ -107,5 +73,59 @@ func (p *PayloaderResults) ComputeResults(workers []worker.Worker) (*Results, er
 		results.Latency.Average = totalLatency / time.Duration(len(results.LatencyPerReq))
 	}
 
+	results.ReqByteSize.Single = workers[0].ReqSize()
+	results.ReqByteSize.Total = workers[0].ReqSize() * results.CompletedReqs
+	if numSeconds := int64(results.Total / time.Second); numSeconds == 0 {
+		results.ReqByteSize.PerSecond = workers[0].ReqSize() * results.CompletedReqs
+	} else {
+		results.ReqByteSize.PerSecond = (workers[0].ReqSize() * results.CompletedReqs) / int64(results.Total/time.Second)
+	}
+
 	return results, nil
+}
+
+func calcMaxMinRPS(results *Results, workers []worker.Worker) {
+	reqsPerSecond := make(map[time.Duration]uint64)
+
+	calcRPSForRange := func(latencies []worker.ReqLatency, startTime time.Time) []worker.ReqLatency {
+		begin := startTime.UnixNano()
+		end := startTime.Add(time.Second).UnixNano()
+		outOfBoundsLatencies := make([]worker.ReqLatency, 0)
+
+		for _, l := range latencies {
+			if l[worker.ReqBegin] >= begin && l[worker.ReqEnd] <= end {
+				if _, ok := reqsPerSecond[time.Duration(startTime.Unix())]; ok {
+					reqsPerSecond[time.Duration(startTime.Unix())]++
+				} else {
+					reqsPerSecond[time.Duration(startTime.Unix())] = 1
+				}
+				continue
+			}
+			outOfBoundsLatencies = append(outOfBoundsLatencies, l)
+		}
+		return outOfBoundsLatencies
+	}
+
+	reqs := make([]worker.ReqLatency, 0)
+	for _, w := range workers {
+		reqs = append(reqs, w.Stats().Reqs...)
+	}
+
+	for t := results.Start; t.Before(results.End); t = t.Add(500 * time.Millisecond) {
+		reqs = calcRPSForRange(reqs, t)
+	}
+
+	// TODO standard deviation, histogram
+
+	if len(reqsPerSecond) > 0 {
+		for _, val := range reqsPerSecond {
+			if val > results.RPS.Max {
+				results.RPS.Max = val
+			}
+			if val < results.RPS.Min || results.RPS.Min == 0 {
+				results.RPS.Min = val
+			}
+		}
+		results.RPS.Average = float64(results.CompletedReqs) / (float64(results.Total) / float64(time.Second))
+	}
 }

@@ -38,7 +38,7 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 
 	if verbose {
 		pterm.EnableDebugMessages()
-		pterm.Warning.Println("In verbose mode RPS will be slightly lower, especially for long running tests")
+		pterm.Warning.Println("In verbose mode RPS will be slightly lower due to monitoring, more noticeable in longer running tests")
 	}
 
 	payload := payloader.NewPayLoader(conf)

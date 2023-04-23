@@ -40,6 +40,17 @@ func (r *Req) SetBody(body []byte) {
 	}
 }
 
+func (r *Req) Size() int64 {
+	var size = r.req.ContentLength
+	for key, header := range r.req.Header {
+		size += int64(len(key))
+		for _, val := range header {
+			size += int64(len(val))
+		}
+	}
+	return size
+}
+
 func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error {
 	resptemp, err := fh.client.Do(req.(*Req).req)
 	resp.(*Resp).resp = resptemp
@@ -98,6 +109,7 @@ func GetNetHTTP3Client(config *http_clients.Config) (http_clients.GoPayLoaderCli
 
 	roundTripper := &http3.RoundTripper{
 		TLSClientConfig: tlsConfig,
+		EnableDatagrams: true,
 	}
 
 	return &Client{

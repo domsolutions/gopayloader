@@ -9,6 +9,7 @@ import (
 type Request interface {
 	SetHeader(key, val string)
 	SetBody(body []byte)
+	Size() int64
 }
 
 type Response interface {

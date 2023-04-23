@@ -9,6 +9,7 @@ import (
 type Worker interface {
 	Run(wg *sync.WaitGroup)
 	Stats() Stats
+	ReqSize() int64
 }
 
 type WorkerBase struct {
@@ -18,6 +19,10 @@ type WorkerBase struct {
 	req        http_clients.Request
 	resp       http_clients.Response
 	middleware func(w *WorkerBase)
+}
+
+func (w *WorkerBase) ReqSize() int64 {
+	return w.req.Size()
 }
 
 func (w *WorkerBase) run() {
