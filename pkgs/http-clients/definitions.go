@@ -8,9 +8,7 @@ import (
 
 type Request interface {
 	SetHeader(key, val string)
-	SetMethod(method string)
 	SetBody(body []byte)
-	SetRequestURI(uri string) error
 }
 
 type Response interface {
@@ -19,7 +17,7 @@ type Response interface {
 
 type GoPayLoaderClient interface {
 	Do(req Request, resp Response) error
-	NewReq() Request
+	NewReq(method, url string) (Request, error)
 	NewResponse() Response
 }
 

@@ -7,7 +7,6 @@ import (
 	"github.com/quic-go/quic-go/http3"
 	"io"
 	"net/http"
-	"net/url"
 )
 
 type Client struct {
@@ -41,15 +40,6 @@ func (r *Req) SetBody(body []byte) {
 	}
 }
 
-func (r *Req) SetRequestURI(uri string) error {
-	u, err := url.ParseRequestURI(uri)
-	if err != nil {
-		return err
-	}
-	r.req.URL = u
-	return nil
-}
-
 func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error {
 	resptemp, err := fh.client.Do(req.(*Req).req)
 	resp.(*Resp).resp = resptemp
@@ -60,10 +50,15 @@ func (fh *Client) NewResponse() http_clients.Response {
 	return &Resp{}
 }
 
-func (fh *Client) NewReq() http_clients.Request {
-	return &Req{
-		req: &http.Request{},
+func (fh *Client) NewReq(method, url string) (http_clients.Request, error) {
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return nil, err
 	}
+
+	return &Req{
+		req: req,
+	}, nil
 }
 
 func GetNetHTTPClient(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {

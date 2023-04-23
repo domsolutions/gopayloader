@@ -28,11 +28,6 @@ func (fh *Req) SetBody(body []byte) {
 	fh.req.SetBody(body)
 }
 
-func (fh *Req) SetRequestURI(uri string) error {
-	fh.req.SetRequestURI(uri)
-	return nil
-}
-
 func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error {
 	return fh.client.Do(req.(*Req).req, resp.(*fasthttp.Response))
 }
@@ -41,10 +36,13 @@ func (fh *Client) NewResponse() http_clients.Response {
 	return &fasthttp.Response{}
 }
 
-func (fh *Client) NewReq() http_clients.Request {
+func (fh *Client) NewReq(method, url string) (http_clients.Request, error) {
+	r := &fasthttp.Request{}
+	r.SetRequestURI(url)
+	r.Header.SetMethodBytes([]byte(method))
 	return &Req{
-		req: &fasthttp.Request{},
-	}
+		req: r,
+	}, nil
 }
 
 func GetFastHTTPClient(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {

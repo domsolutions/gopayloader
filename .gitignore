@@ -2,3 +2,4 @@ gopayloader
 private-key.pem
 .idea
 server_*
+*.qlog

@@ -139,8 +139,9 @@ var runServerCmd = &cobra.Command{
 				})
 			}
 
+			tlsConfigServer := tlsConfig()
+
 			server := httpv3server.Server{
-				//EnableDatagrams: true,
 				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					_, err = w.Write([]byte(response))
 					if err != nil {
@@ -152,19 +153,10 @@ var runServerCmd = &cobra.Command{
 				}),
 				Addr:       addr,
 				QuicConfig: quicConf,
+				TLSConfig:  tlsConfigServer,
 			}
 
-			//
-			//http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			//	_, err = w.Write([]byte(response))
-			//	if err != nil {
-			//		log.Println(err)
-			//	}
-			//	if debug {
-			//		log.Printf("%+v\n", r.Header)
-			//	}
-			//}))
-			if err := server.ListenAndServeTLS(serverCert, privateKey); err != nil {
+			if err := server.ListenAndServe(); err != nil {
 				log.Fatal(err)
 			}
 		}

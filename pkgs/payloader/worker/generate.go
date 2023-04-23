@@ -61,16 +61,13 @@ func NewWorker(config *http_clients.Config) (Worker, error) {
 }
 
 func getReq(client http_clients.GoPayLoaderClient, config *http_clients.Config) (http_clients.Request, error) {
-	req := client.NewReq()
-	if err := req.SetRequestURI(config.ReqURI); err != nil {
+	req, err := client.NewReq(config.Method, config.ReqURI)
+	if err != nil {
 		return nil, err
 	}
 
 	if config.DisableKeepAlive {
 		req.SetHeader("Connection", "close")
-	}
-	if config.Method != "GET" {
-		req.SetMethod(config.Method)
 	}
 	if len(config.Headers) > 0 {
 		for _, h := range config.Headers {
