@@ -9,6 +9,13 @@ import (
 	"strings"
 )
 
+const (
+	httpClientNetHTTP   = "nethttp"
+	httpClientNetHTTP3  = "nethttp-3"
+	httpClientFastHTTP1 = "fasthttp-1"
+	httpClientFastHTTP2 = "fasthttp-2"
+)
+
 type TotalRequestsComplete int64
 
 type ResponseCode int
@@ -110,12 +117,15 @@ func baseConfig(config *http_clients.Config, client http_clients.GoPayLoaderClie
 }
 
 func getClient(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
-	switch true {
-	case config.NetHTTP:
+	switch config.Client {
+	case httpClientNetHTTP:
 		return nethttp.GetNetHTTPClient(config)
-	case config.HTTPV3:
+	case httpClientNetHTTP3:
 		return nethttp.GetNetHTTP3Client(config)
-	default:
-		return fasthttp.GetFastHTTPClient(config)
+	case httpClientFastHTTP1:
+		return fasthttp.GetFastHTTPClient1(config)
+	case httpClientFastHTTP2:
+		return fasthttp.GetFastHTTPClient2(config)
 	}
+	return nil, fmt.Errorf("client %s not recognised", config.Client)
 }

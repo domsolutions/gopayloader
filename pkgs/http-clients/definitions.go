@@ -37,7 +37,6 @@ type Config struct {
 	WriteTimeout      time.Duration
 	Method            string
 	Verbose           bool
-	HTTPV2            bool
 	JwtStreamReceiver <-chan string
 	JwtStreamErr      <-chan error
 	JWTHeader         string
@@ -47,6 +46,7 @@ type Config struct {
 	NetHTTP           bool
 	HTTPV3            bool
 	ReqStats          chan<- time.Duration
+	Client            string
 }
 
 func (c *Config) ReqLimitedOnly() bool {

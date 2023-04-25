@@ -25,7 +25,6 @@ type Config struct {
 	Method           string
 	Verbose          bool
 	Ticker           time.Duration
-	HTTPV2           bool
 	JwtKID           string
 	JwtKey           string
 	JwtSub           string
@@ -37,11 +36,10 @@ type Config struct {
 	Headers          []string
 	Body             string
 	BodyFile         string
-	NetHTTP          bool
-	HTTP3            bool
+	Client           string
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, HTTPV2 bool, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool, headers []string, body, bodyFile string, NetHTTP, HTTP3 bool) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool, headers []string, body, bodyFile string, client string) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
@@ -57,7 +55,6 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		Method:           method,
 		Verbose:          verbose,
 		Ticker:           ticker,
-		HTTPV2:           HTTPV2,
 		JwtKID:           jwtKID,
 		JwtKey:           jwtKey,
 		JwtSub:           jwtSub,
@@ -69,8 +66,7 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		Headers:          headers,
 		Body:             body,
 		BodyFile:         bodyFile,
-		NetHTTP:          NetHTTP,
-		HTTP3:            HTTP3,
+		Client:           client,
 	}
 }
 

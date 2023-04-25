@@ -53,7 +53,7 @@ func (fh *Client) NewReq(method, url string) (http_clients.Request, error) {
 	}, nil
 }
 
-func GetFastHTTPClient(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
+func GetFastHTTPClient1(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: config.SkipVerify,
 	}
@@ -81,18 +81,22 @@ func GetFastHTTPClient(config *http_clients.Config) (http_clients.GoPayLoaderCli
 		TLSConfig:                     tlsConfig,
 	}
 
-	if !config.HTTPV2 {
-		return &Client{client: client}, nil
+	return &Client{client: client}, nil
+}
+
+func GetFastHTTPClient2(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
+	client, err := GetFastHTTPClient1(config)
+	if err != nil {
+		return nil, err
 	}
 
-	// TODO can't ctrl+c when http2 client can't connect to server which is down, just hangs
-	// TODO look into how to send reqs i.e. pipelining... does it actually speed stuff up? in use by 40% so should support
+	// TODO hangs when server is http/1.1
 
-	if err := http2.ConfigureClient(client, http2.ClientOpts{
+	if err := http2.ConfigureClient(client.(*Client).client, http2.ClientOpts{
 		MaxResponseTime: config.ReadTimeout,
 	}); err != nil {
 		return nil, err
 	}
 
-	return &Client{client: client}, nil
+	return &Client{client: client.(*Client).client}, nil
 }

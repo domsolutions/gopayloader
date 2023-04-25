@@ -32,11 +32,11 @@ const (
 	argHeaders      = "headers"
 	argBody         = "body"
 	argBodyFile     = "body-file"
-	argNetHTTP      = "net-http"
-	argHTTP3        = "http-3"
+	argClient       = "client"
 )
 
 var (
+	client           string
 	method           string
 	mTLSCert         string
 	mTLSKey          string
@@ -49,7 +49,6 @@ var (
 	skipVerify       bool
 	verbose          bool
 	ticker           time.Duration
-	HTTPV2           bool
 	jwtKey           string
 	jwtSub           string
 	jwtIss           string
@@ -61,13 +60,11 @@ var (
 	headers          *[]string
 	body             string
 	bodyFile         string
-	netHTTP          bool
-	http3            bool
 )
 
 var runCmd = &cobra.Command{
 	Use:   "run <host>",
-	Short: "Load test HTTP/S server",
+	Short: "Load test HTTP/S server - supports http/1.1 http/2 http/3",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return errors.New("no request uri specified as argument")
@@ -90,7 +87,6 @@ var runCmd = &cobra.Command{
 			method,
 			verbose,
 			ticker,
-			HTTPV2,
 			jwtKID,
 			jwtKey,
 			jwtSub,
@@ -102,8 +98,7 @@ var runCmd = &cobra.Command{
 			*headers,
 			body,
 			bodyFile,
-			netHTTP,
-			http3)
+			client)
 	},
 }
 
@@ -111,8 +106,8 @@ func init() {
 	runCmd.Flags().Int64VarP(&reqs, argRequests, "r", 0, "Number of requests")
 	runCmd.Flags().UintVarP(&conns, argConnections, "c", 1, "Number of simultaneous connections")
 	runCmd.Flags().BoolVarP(&disableKeepAlive, argKeepAlive, "k", false, "Disable keep-alive connections")
+
 	// TODO test http/2 works - just hangs
-	runCmd.Flags().BoolVar(&HTTPV2, argHTTPV2, false, "Use HTTP/2")
 	runCmd.Flags().BoolVar(&skipVerify, argVerifySigner, false, "Skip verify SSL cert signer")
 	runCmd.Flags().DurationVarP(&duration, argTime, "t", 0, "Execution time window, if used with -r will uniformly distribute reqs within time window, without -r reqs are unlimited")
 	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 5*time.Second, "Read timeout")
@@ -123,11 +118,13 @@ func init() {
 	runCmd.Flags().BoolVarP(&verbose, argVerbose, "v", false, "verbose - slows down RPS slightly for long running tests")
 	runCmd.Flags().DurationVar(&ticker, argTicker, time.Second, "How often to print results while running in verbose mode")
 	headers = runCmd.Flags().StringSliceP(argHeaders, "H", []string{}, "headers to send in request, can have multiple i.e -H 'content-type:application/json' -H' connection:close'")
-	runCmd.Flags().BoolVar(&netHTTP, argNetHTTP, false, "Use standard net/http HTTP client package")
-	runCmd.Flags().BoolVar(&http3, argHTTP3, false, "Use HTTP3 client")
-
 	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
+
+	runCmd.Flags().StringVar(&client, argClient, "fasthttp-1", `fasthttp-1 for fast http/1.1 requests
+fasthttp-2 for fast http/2 requests
+nethttp for standard net/http requests supporting http/1.1 http/2
+nethttp-3 for standard net/http requests supporting http/3 using quic-go`)
 
 	// TODO in stats, bytes received... received means reading body, possibly rps reduce
 	// TODO sort out http client flags

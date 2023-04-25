@@ -170,13 +170,11 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 			WriteTimeout:     p.config.WriteTimeout,
 			Method:           p.config.Method,
 			Verbose:          p.config.Verbose,
-			HTTPV2:           p.config.HTTPV2,
 			Headers:          p.config.Headers,
 			Body:             p.config.Body,
 			BodyFile:         p.config.BodyFile,
-			NetHTTP:          p.config.NetHTTP,
-			HTTPV3:           p.config.HTTP3,
 			ReqStats:         reqStats,
+			Client:           p.config.Client,
 		}
 
 		// evenly distribute remainder reqs
