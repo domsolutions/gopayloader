@@ -45,15 +45,25 @@ func (p *PayloaderResults) ComputeResults(workers []worker.Worker, results *GoPa
 		}
 	}
 
-	results.Latency.Average = results.Latency.Total / time.Duration(results.CompletedReqs)
-	results.RPS.Average = float64(results.CompletedReqs) / (float64(results.Total) / float64(time.Second))
+	if results.CompletedReqs > 0 {
+		results.Latency.Average = results.Latency.Total / time.Duration(results.CompletedReqs)
+		results.RPS.Average = float64(results.CompletedReqs) / (float64(results.Total) / float64(time.Second))
 
-	results.ReqByteSize.Single = workers[0].ReqSize()
-	results.ReqByteSize.Total = workers[0].ReqSize() * results.CompletedReqs
-	if numSeconds := int64(results.Total / time.Second); numSeconds == 0 {
-		results.ReqByteSize.PerSecond = workers[0].ReqSize() * results.CompletedReqs
-	} else {
-		results.ReqByteSize.PerSecond = (workers[0].ReqSize() * results.CompletedReqs) / int64(results.Total/time.Second)
+		results.ReqByteSize.Single = workers[0].ReqSize()
+		results.ReqByteSize.Total = workers[0].ReqSize() * results.CompletedReqs
+		if numSeconds := int64(results.Total / time.Second); numSeconds == 0 {
+			results.ReqByteSize.PerSecond = workers[0].ReqSize() * results.CompletedReqs
+		} else {
+			results.ReqByteSize.PerSecond = (workers[0].ReqSize() * results.CompletedReqs) / int64(results.Total/time.Second)
+		}
+
+		results.RespByteSize.Single = workers[0].RespSize()
+		results.RespByteSize.Total = workers[0].RespSize() * results.CompletedReqs
+		if numSeconds := int64(results.Total / time.Second); numSeconds == 0 {
+			results.RespByteSize.PerSecond = workers[0].RespSize() * results.CompletedReqs
+		} else {
+			results.RespByteSize.PerSecond = (workers[0].RespSize() * results.CompletedReqs) / int64(results.Total/time.Second)
+		}
 	}
 
 	return results, nil

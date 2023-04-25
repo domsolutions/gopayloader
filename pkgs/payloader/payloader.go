@@ -49,10 +49,11 @@ type GoPayloaderResults struct {
 	Latency       Latency
 	Responses     map[worker.ResponseCode]int64
 	Errors        map[string]uint
-	ReqByteSize   ReqByteSize
+	ReqByteSize   ByteSize
+	RespByteSize  ByteSize
 }
 
-type ReqByteSize struct {
+type ByteSize struct {
 	Single    int64
 	Total     int64
 	PerSecond int64

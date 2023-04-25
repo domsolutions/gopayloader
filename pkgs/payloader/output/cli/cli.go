@@ -21,6 +21,7 @@ func Display(results *payloader.GoPayloaderResults) {
 	displayOverview(results, t)
 	displayRPS(results.RPS, t)
 	displayReqSize(results.ReqByteSize, t)
+	displayRespSize(results.RespByteSize, t)
 	displayLatency(results.Latency, t)
 	displayResponseCodes(results.Responses, t)
 
@@ -43,11 +44,20 @@ func displayOverview(results *payloader.GoPayloaderResults, t table.Writer) {
 	t.AppendSeparator()
 }
 
-func displayReqSize(req payloader.ReqByteSize, t table.Writer) {
+func displayReqSize(req payloader.ByteSize, t table.Writer) {
 	rows := make([]table.Row, 0)
 	rows = append(rows, table.Row{"Req size (bytes)", req.Single})
 	rows = append(rows, table.Row{"Req size/second (MB)", fmt.Sprintf("%.3f", float64(req.PerSecond)/(1024*1024))})
 	rows = append(rows, table.Row{"Req total size (MB)", fmt.Sprintf("%.3f", float64(req.Total)/float64(1024*1024))})
+	t.AppendRows(rows)
+	t.AppendSeparator()
+}
+
+func displayRespSize(resp payloader.ByteSize, t table.Writer) {
+	rows := make([]table.Row, 0)
+	rows = append(rows, table.Row{"Resp size (bytes)", resp.Single})
+	rows = append(rows, table.Row{"Resp size/second (MB)", fmt.Sprintf("%.3f", float64(resp.PerSecond)/(1024*1024))})
+	rows = append(rows, table.Row{"Resp total size (MB)", fmt.Sprintf("%.3f", float64(resp.Total)/float64(1024*1024))})
 	t.AppendRows(rows)
 	t.AppendSeparator()
 }

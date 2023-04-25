@@ -5,6 +5,7 @@ import (
 	"github.com/dgrr/http2"
 	"github.com/domsolutions/gopayloader/pkgs/http-clients"
 	"github.com/valyala/fasthttp"
+	"net"
 	"net/url"
 )
 
@@ -14,6 +15,20 @@ type Client struct {
 
 type Req struct {
 	req *fasthttp.Request
+}
+
+type Resp struct {
+	resp *fasthttp.Response
+}
+
+func (r *Resp) StatusCode() int {
+	return r.resp.StatusCode()
+}
+
+func (r *Resp) Size() int64 {
+	var size = int64(len(r.resp.Body()))
+	size += int64(len(r.resp.Header.Header()))
+	return size
 }
 
 func (fh *Req) SetHeader(key, val string) {
@@ -37,11 +52,11 @@ func (fh *Req) SetBody(body []byte) {
 }
 
 func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error {
-	return fh.client.Do(req.(*Req).req, resp.(*fasthttp.Response))
+	return fh.client.Do(req.(*Req).req, resp.(*Resp).resp)
 }
 
 func (fh *Client) NewResponse() http_clients.Response {
-	return &fasthttp.Response{}
+	return &Resp{resp: &fasthttp.Response{}}
 }
 
 func (fh *Client) NewReq(method, url string) (http_clients.Request, error) {
@@ -79,6 +94,9 @@ func GetFastHTTPClient1(config *http_clients.Config) (http_clients.GoPayLoaderCl
 		WriteTimeout:                  config.WriteTimeout,
 		DisableHeaderNamesNormalizing: true,
 		TLSConfig:                     tlsConfig,
+		Dial: func(addr string) (net.Conn, error) {
+			return fasthttp.DialTimeout(addr, config.ReadTimeout)
+		},
 	}
 
 	return &Client{client: client}, nil

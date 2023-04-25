@@ -2,6 +2,7 @@ package wrapper
 
 import (
 	"context"
+	"errors"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/output/cli"
 	"github.com/domsolutions/gopayloader/version"
 	"github.com/pterm/pterm"
@@ -65,12 +66,15 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 	case <-c:
 		// user pressed ctrl+c
 		cancel()
+		ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
 		select {
 		case results := <-resPayLoader:
 			cli.Display(results)
 		case err := <-errPayLoader:
 			// user may have cancelled during jwt generation, so there will be no results
 			return err
+		case <-ctx.Done():
+			return errors.New("timeout exceeded, failed to get payload results")
 		}
 	case err := <-errPayLoader:
 		return err

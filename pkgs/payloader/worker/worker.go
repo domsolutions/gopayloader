@@ -10,6 +10,7 @@ type Worker interface {
 	Run(wg *sync.WaitGroup)
 	Stats() Stats
 	ReqSize() int64
+	RespSize() int64
 }
 
 type WorkerBase struct {
@@ -24,6 +25,10 @@ type WorkerBase struct {
 
 func (w *WorkerBase) ReqSize() int64 {
 	return w.req.Size()
+}
+
+func (w *WorkerBase) RespSize() int64 {
+	return w.resp.Size()
 }
 
 func (w *WorkerBase) run() {
@@ -47,8 +52,6 @@ func (w *WorkerBase) process() error {
 
 	defer func() {
 		if err == nil {
-			//fmt.Println(begin, end)
-			//w.stats.Reqs = append(w.stats.Reqs, ReqLatency{begin, end})
 			w.reqStats <- time.Duration(end - begin)
 		}
 	}()

@@ -25,6 +25,17 @@ func (r *Resp) StatusCode() int {
 	return r.resp.StatusCode
 }
 
+func (r *Resp) Size() int64 {
+	var size = r.resp.ContentLength
+	for key, header := range r.resp.Header {
+		size += int64(len(key))
+		for _, val := range header {
+			size += int64(len(val))
+		}
+	}
+	return size
+}
+
 func (r *Req) SetHeader(key, val string) {
 	r.req.Header.Set(key, val)
 }
@@ -48,7 +59,8 @@ func (r *Req) Size() int64 {
 			size += int64(len(val))
 		}
 	}
-	return size
+	size += int64(len(r.req.UserAgent()))
+	return size + int64(len(r.req.Host))
 }
 
 func (c *Client) Do(req http_clients.Request, resp http_clients.Response) error {
@@ -58,7 +70,9 @@ func (c *Client) Do(req http_clients.Request, resp http_clients.Response) error 
 }
 
 func (c *Client) NewResponse() http_clients.Response {
-	return &Resp{}
+	return &Resp{
+		resp: &http.Response{},
+	}
 }
 
 func (c *Client) NewReq(method, url string) (http_clients.Request, error) {

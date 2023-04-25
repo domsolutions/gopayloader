@@ -2,6 +2,7 @@ package payloader
 
 import (
 	"errors"
+	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"github.com/domsolutions/gopayloader/wrapper"
 	"github.com/spf13/cobra"
 	"time"
@@ -121,13 +122,15 @@ func init() {
 	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
 
-	runCmd.Flags().StringVar(&client, argClient, "fasthttp-1", `fasthttp-1 for fast http/1.1 requests
-fasthttp-2 for fast http/2 requests
-nethttp for standard net/http requests supporting http/1.1 http/2
-nethttp-3 for standard net/http requests supporting http/3 using quic-go`)
+	runCmd.Flags().StringVar(&client, argClient, worker.HttpClientFastHTTP1, worker.HttpClientFastHTTP1+` for fast http/1.1 requests
+`+worker.HttpClientFastHTTP2+` for fast http/2 requests
+`+worker.HttpClientNetHTTP+` for standard net/http requests supporting http/1.1 http/2
+`+worker.HttpClientNetHTTP3+` for standard net/http requests supporting http/3 using quic-go`)
 
 	// TODO in stats, bytes received... received means reading body, possibly rps reduce
 	// TODO sort out http client flags
+
+	// TODO connection timeout - hangs using http2 client to connect to http1 server
 
 	runCmd.Flags().StringVar(&jwtKID, argJWTKid, "", "JWT KID")
 	runCmd.Flags().StringVar(&jwtKey, argJWTKey, "", "JWT signing private key path")
