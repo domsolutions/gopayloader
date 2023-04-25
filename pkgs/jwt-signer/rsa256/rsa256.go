@@ -12,7 +12,7 @@ type SignerRSA256 struct {
 	privKey *rsa.PrivateKey
 }
 
-func CreateSigner(privKey []byte, kid string) (definition.Signer, error) {
+func Signer(privKey []byte, kid string) (definition.Signer, error) {
 	rsaKey, err := jwt.ParseRSAPrivateKeyFromPEM(privKey)
 	if err != nil {
 		pterm.Debug.Printf("Failed to parse RSA256 private key %v", err)

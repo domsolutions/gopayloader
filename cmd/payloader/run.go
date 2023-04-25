@@ -129,7 +129,7 @@ func init() {
 	runCmd.Flags().StringVar(&mTLSCert, argMTLSCert, "", "mTLS cert path")
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
 
-	// TODO in stats, bytes sent/received... received means reading body, possibly rps reduce
+	// TODO in stats, bytes received... received means reading body, possibly rps reduce
 	// TODO sort out http client flags
 
 	runCmd.Flags().StringVar(&jwtKID, argJWTKid, "", "JWT KID")

@@ -142,11 +142,11 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 
 	if p.config.Duration != 0 && p.config.ReqTarget != 0 {
 		reqEvery = time.Duration(float64(p.config.Duration) / (float64(p.config.ReqTarget) / float64(p.config.Conns)))
-		msg := printer.Sprintf("Running requests every %s for every %d connection for total %d requests/s against %s\n",
+		msg := printer.Sprintf("Running requests every %s for every %d connection/s for total %d request/s against %s\n",
 			reqEvery.String(), int(p.config.Conns), p.config.ReqTarget, p.config.ReqURI)
 		pterm.Info.Printf(msg)
 	} else {
-		msg := printer.Sprintf("Running %d requests with %d connection/s against %s\n", p.config.ReqTarget, int(p.config.Conns), p.config.ReqURI)
+		msg := printer.Sprintf("Running %d request/s with %d connection/s against %s\n", p.config.ReqTarget, int(p.config.Conns), p.config.ReqURI)
 		pterm.Info.Printf(msg)
 	}
 
@@ -203,8 +203,8 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 	p.startWorkers(startTrigger)
 	p.startTimer()
 
-	ctx, stopCalc := context.WithCancel(context.Background())
-	defer stopCalc()
+	ctx, stopStatsCalc := context.WithCancel(context.Background())
+	defer stopStatsCalc()
 	if p.config.Verbose {
 		go p.displayProgress(ctx, workers, int(p.config.ReqTarget), p.config.Duration)
 	}
@@ -216,7 +216,7 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 	pterm.Success.Printf("Payload complete, calculating results\n")
 
 	p.stopTimer()
-	stopCalc()
+	stopStatsCalc()
 
 	plResults := NewPayLoaderResults(p)
 	return plResults.ComputeResults(workers, results)

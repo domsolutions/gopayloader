@@ -3,6 +3,7 @@ package wrapper
 import (
 	"context"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/output/cli"
+	"github.com/domsolutions/gopayloader/version"
 	"github.com/pterm/pterm"
 	"os"
 	"os/signal"
@@ -35,6 +36,9 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 	if err := conf.Validate(); err != nil {
 		return err
 	}
+
+	pterm.DefaultBasicText.Printf(pterm.LightYellow("Gopayloader v%s HTTP/JWT authentication benchmark tool \n"), version.Version)
+	pterm.DefaultBasicText.Println("https://github.com/domsolutions/gopayloader")
 
 	if verbose {
 		pterm.EnableDebugMessages()

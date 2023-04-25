@@ -12,7 +12,7 @@ type SignerED25519 struct {
 	privKey ed25519.PrivateKey
 }
 
-func CreateSigner(privKey []byte, kid string) (definition.Signer, error) {
+func Signer(privKey []byte, kid string) (definition.Signer, error) {
 	edKey, err := jwt.ParseEdPrivateKeyFromPEM(privKey)
 	if err != nil {
 		pterm.Debug.Printf("Failed to parse ED25519 private key %v", err)

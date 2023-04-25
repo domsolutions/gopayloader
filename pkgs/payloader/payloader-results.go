@@ -21,8 +21,6 @@ func (p *PayloaderResults) ComputeResults(workers []worker.Worker, results *GoPa
 	results.Errors = make(map[string]uint)
 	results.Responses = make(map[worker.ResponseCode]int64)
 
-	// TODO calculating results take v long with; ./gopayloader run http://localhost:8081 -c 125 -r 10000000 --jwt-enable --jwt-header blah --jwt-key ./private-key.pem --jwt-kid 123  --jwt-sub my-sub --jwt-iss my-issuer --jwt-aud audience
-
 	pterm.Debug.Println("Calculating response code statistics")
 
 	for _, w := range workers {
