@@ -14,24 +14,21 @@ func NewPayLoaderResults(pl *PayLoader) *PayloaderResults {
 	return &PayloaderResults{pl}
 }
 
-func (p *PayloaderResults) ComputeResults(workers []worker.Worker) (*Results, error) {
-	results := &Results{
-		Start:     p.startTime,
-		End:       p.stopTime,
-		Total:     p.stopTime.Sub(p.startTime),
-		Responses: make(map[worker.ResponseCode]int64),
-		Errors:    make(map[string]uint),
-	}
+func (p *PayloaderResults) ComputeResults(workers []worker.Worker, results *GoPayloaderResults) (*GoPayloaderResults, error) {
+	results.Start = p.startTime
+	results.End = p.stopTime
+	results.Total = p.stopTime.Sub(p.startTime)
+	results.Errors = make(map[string]uint)
+	results.Responses = make(map[worker.ResponseCode]int64)
+
+	// TODO calculating results take v long with; ./gopayloader run http://localhost:8081 -c 125 -r 10000000 --jwt-enable --jwt-header blah --jwt-key ./private-key.pem --jwt-kid 123  --jwt-sub my-sub --jwt-iss my-issuer --jwt-aud audience
 
 	pterm.Debug.Println("Calculating response code statistics")
+
 	for _, w := range workers {
 		stats := w.Stats()
 		results.CompletedReqs += stats.CompletedReqs
 		results.FailedReqs += stats.FailedReqs
-
-		for _, l := range stats.Reqs {
-			results.LatencyPerReq = append(results.LatencyPerReq, time.Duration(l[1]-l[0]))
-		}
 
 		for err, count := range stats.Errors {
 			if _, ok := results.Errors[err]; ok {
@@ -48,30 +45,10 @@ func (p *PayloaderResults) ComputeResults(workers []worker.Worker) (*Results, er
 				results.Responses[code] = val
 			}
 		}
-
 	}
 
-	pterm.Debug.Println("Calculating max/min RPS")
-	calcMaxMinRPS(results, workers)
-
-	if len(results.LatencyPerReq) > 0 {
-		pterm.Debug.Println("Calculating max/min latency")
-
-		var totalLatency time.Duration = 0
-		results.Latency.Min = results.LatencyPerReq[0]
-
-		for _, r := range results.LatencyPerReq {
-			if r > results.Latency.Max {
-				results.Latency.Max = r
-			}
-			if r < results.Latency.Min {
-				results.Latency.Min = r
-			}
-			totalLatency += r
-		}
-
-		results.Latency.Average = totalLatency / time.Duration(len(results.LatencyPerReq))
-	}
+	results.Latency.Average = results.Latency.Total / time.Duration(results.CompletedReqs)
+	results.RPS.Average = float64(results.CompletedReqs) / (float64(results.Total) / float64(time.Second))
 
 	results.ReqByteSize.Single = workers[0].ReqSize()
 	results.ReqByteSize.Total = workers[0].ReqSize() * results.CompletedReqs
@@ -82,50 +59,4 @@ func (p *PayloaderResults) ComputeResults(workers []worker.Worker) (*Results, er
 	}
 
 	return results, nil
-}
-
-func calcMaxMinRPS(results *Results, workers []worker.Worker) {
-	reqsPerSecond := make(map[time.Duration]uint64)
-
-	calcRPSForRange := func(latencies []worker.ReqLatency, startTime time.Time) []worker.ReqLatency {
-		begin := startTime.UnixNano()
-		end := startTime.Add(time.Second).UnixNano()
-		outOfBoundsLatencies := make([]worker.ReqLatency, 0)
-
-		for _, l := range latencies {
-			if l[worker.ReqBegin] >= begin && l[worker.ReqEnd] <= end {
-				if _, ok := reqsPerSecond[time.Duration(startTime.Unix())]; ok {
-					reqsPerSecond[time.Duration(startTime.Unix())]++
-				} else {
-					reqsPerSecond[time.Duration(startTime.Unix())] = 1
-				}
-				continue
-			}
-			outOfBoundsLatencies = append(outOfBoundsLatencies, l)
-		}
-		return outOfBoundsLatencies
-	}
-
-	reqs := make([]worker.ReqLatency, 0)
-	for _, w := range workers {
-		reqs = append(reqs, w.Stats().Reqs...)
-	}
-
-	for t := results.Start; t.Before(results.End); t = t.Add(500 * time.Millisecond) {
-		reqs = calcRPSForRange(reqs, t)
-	}
-
-	// TODO standard deviation, histogram
-
-	if len(reqsPerSecond) > 0 {
-		for _, val := range reqsPerSecond {
-			if val > results.RPS.Max {
-				results.RPS.Max = val
-			}
-			if val < results.RPS.Min || results.RPS.Min == 0 {
-				results.RPS.Min = val
-			}
-		}
-		results.RPS.Average = float64(results.CompletedReqs) / (float64(results.Total) / float64(time.Second))
-	}
 }

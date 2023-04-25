@@ -9,21 +9,13 @@ import (
 	"strings"
 )
 
-const (
-	ReqBegin = 0
-	ReqEnd   = 1
-)
-
 type TotalRequestsComplete int64
 
 type ResponseCode int
 
-type ReqLatency [2]int64
-
 type Stats struct {
 	CompletedReqs int64
 	FailedReqs    int64
-	Reqs          []ReqLatency
 	Responses     map[ResponseCode]int64
 	Errors        map[string]uint
 }
@@ -105,10 +97,11 @@ func jwtMiddleware(w *WorkerBase) {
 
 func baseConfig(config *http_clients.Config, client http_clients.GoPayLoaderClient, req http_clients.Request, resp http_clients.Response) *WorkerBase {
 	return &WorkerBase{
-		config: config,
-		req:    req,
-		resp:   resp,
-		client: client,
+		config:   config,
+		req:      req,
+		resp:     resp,
+		client:   client,
+		reqStats: config.ReqStats,
 		stats: Stats{
 			Responses: make(map[ResponseCode]int64),
 			Errors:    make(map[string]uint),

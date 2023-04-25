@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func Display(results *payloader.Results) {
+func Display(results *payloader.GoPayloaderResults) {
 	pterm.Success.Printf("Gopayloader results \n\n")
 	fmt.Println("")
 
@@ -31,7 +31,7 @@ func Display(results *payloader.Results) {
 	t.Render()
 }
 
-func displayOverview(results *payloader.Results, t table.Writer) {
+func displayOverview(results *payloader.GoPayloaderResults, t table.Writer) {
 	t.AppendHeader(table.Row{"Metric", "Result"})
 	t.AppendRows([]table.Row{
 		{"Total time", results.Total},

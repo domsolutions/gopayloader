@@ -8,6 +8,8 @@ import (
 	jwt_generator "github.com/domsolutions/gopayloader/pkgs/jwt-generator"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"github.com/pterm/pterm"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -37,13 +39,12 @@ type PayLoader struct {
 	stopTime  time.Time
 }
 
-type Results struct {
+type GoPayloaderResults struct {
 	Total         time.Duration
 	Start         time.Time
 	End           time.Time
 	CompletedReqs int64
 	FailedReqs    int64
-	LatencyPerReq []time.Duration
 	RPS           RPS
 	Latency       Latency
 	Responses     map[worker.ResponseCode]int64
@@ -59,14 +60,15 @@ type ReqByteSize struct {
 
 type RPS struct {
 	Average float64
-	Max     uint64
-	Min     uint64
+	Max     int64
+	Min     int64
 }
 
 type Latency struct {
 	Average time.Duration
 	Max     time.Duration
 	Min     time.Duration
+	Total   time.Duration
 }
 
 func NewPayLoader(config *config.Config) *PayLoader {
@@ -85,7 +87,7 @@ func (p *PayLoader) startWorkers(wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func (p *PayLoader) handleReqs() (*Results, error) {
+func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 	if p.config.ClearCache {
 		if jwtSaveDir == "" {
 			pterm.Error.Println("Cache directory couldn't be determined")
@@ -136,15 +138,20 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	startTrigger.Add(1)
 
 	var reqEvery time.Duration
+	printer := message.NewPrinter(language.English)
+
 	if p.config.Duration != 0 && p.config.ReqTarget != 0 {
 		reqEvery = time.Duration(float64(p.config.Duration) / (float64(p.config.ReqTarget) / float64(p.config.Conns)))
-		pterm.Info.Printf("Running requests every %s for every %d connection for total %d requests/s against %s\n",
+		msg := printer.Sprintf("Running requests every %s for every %d connection for total %d requests/s against %s\n",
 			reqEvery.String(), int(p.config.Conns), p.config.ReqTarget, p.config.ReqURI)
+		pterm.Info.Printf(msg)
 	} else {
-		pterm.Info.Printf("Running %d requests with %d connection/s against %s\n", p.config.ReqTarget, int(p.config.Conns), p.config.ReqURI)
+		msg := printer.Sprintf("Running %d requests with %d connection/s against %s\n", p.config.ReqTarget, int(p.config.Conns), p.config.ReqURI)
+		pterm.Info.Printf(msg)
 	}
 
 	workers := make([]worker.Worker, p.config.Conns)
+	reqStats := make(chan time.Duration, 1000000)
 
 	var conn uint
 	for conn = 0; conn < p.config.Conns; conn++ {
@@ -169,6 +176,7 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 			BodyFile:         p.config.BodyFile,
 			NetHTTP:          p.config.NetHTTP,
 			HTTPV3:           p.config.HTTP3,
+			ReqStats:         reqStats,
 		}
 
 		// evenly distribute remainder reqs
@@ -195,22 +203,55 @@ func (p *PayLoader) handleReqs() (*Results, error) {
 	p.startWorkers(startTrigger)
 	p.startTimer()
 
-	ctx, stopResultsPrinter := context.WithCancel(context.Background())
-	defer stopResultsPrinter()
+	ctx, stopCalc := context.WithCancel(context.Background())
+	defer stopCalc()
 	if p.config.Verbose {
 		go p.displayProgress(ctx, workers, int(p.config.ReqTarget), p.config.Duration)
 	}
+
+	results := &GoPayloaderResults{}
+	go p.calcReqStats(ctx, reqStats, results)
 
 	workersComplete.Wait()
 	pterm.Success.Printf("Payload complete, calculating results\n")
 
 	p.stopTimer()
-	if p.config.Verbose {
-		stopResultsPrinter()
-	}
+	stopCalc()
 
 	plResults := NewPayLoaderResults(p)
-	return plResults.ComputeResults(workers)
+	return plResults.ComputeResults(workers, results)
+}
+
+func (p *PayLoader) calcReqStats(ctx context.Context, recv <-chan time.Duration, result *GoPayloaderResults) {
+	var t time.Duration
+	var rps int64 = 0
+	timer := time.NewTicker(time.Second)
+
+	for {
+		select {
+		case <-ctx.Done():
+			// req finished
+			return
+		case <-timer.C:
+			// new RPS
+			if rps > result.RPS.Max {
+				result.RPS.Max = rps
+			}
+			if rps < result.RPS.Min || result.RPS.Min == 0 {
+				result.RPS.Min = rps
+			}
+			rps = 0
+		case t = <-recv:
+			rps++
+			if t > result.Latency.Max {
+				result.Latency.Max = t
+			}
+			if t < result.Latency.Min || result.Latency.Min == 0 {
+				result.Latency.Min = t
+			}
+			result.Latency.Total += t
+		}
+	}
 }
 
 func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker, reqTarget int, endTime time.Duration) {
@@ -290,6 +331,6 @@ func (p *PayLoader) getProgressBar(endTime time.Duration, reqTarget int) (*pterm
 	return progress, nil
 }
 
-func (p *PayLoader) Run() (*Results, error) {
+func (p *PayLoader) Run() (*GoPayloaderResults, error) {
 	return p.handleReqs()
 }

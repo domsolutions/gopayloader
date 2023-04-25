@@ -43,7 +43,7 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 
 	payload := payloader.NewPayLoader(conf)
 	errPayLoader := make(chan error)
-	resPayLoader := make(chan *payloader.Results)
+	resPayLoader := make(chan *payloader.GoPayloaderResults)
 
 	go func() {
 		results, err := payload.Run()

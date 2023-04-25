@@ -46,6 +46,7 @@ type Config struct {
 	BodyFile          string
 	NetHTTP           bool
 	HTTPV3            bool
+	ReqStats          chan<- time.Duration
 }
 
 func (c *Config) ReqLimitedOnly() bool {

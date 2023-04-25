@@ -19,6 +19,7 @@ type WorkerBase struct {
 	req        http_clients.Request
 	resp       http_clients.Response
 	middleware func(w *WorkerBase)
+	reqStats   chan<- time.Duration
 }
 
 func (w *WorkerBase) ReqSize() int64 {
@@ -41,11 +42,14 @@ func (w *WorkerBase) run() {
 
 func (w *WorkerBase) process() error {
 	begin := time.Now().UnixNano()
+	var end int64
 	var err error
 
 	defer func() {
 		if err == nil {
-			w.stats.Reqs = append(w.stats.Reqs, ReqLatency{begin, time.Now().UnixNano()})
+			//fmt.Println(begin, end)
+			//w.stats.Reqs = append(w.stats.Reqs, ReqLatency{begin, end})
+			w.reqStats <- time.Duration(end - begin)
 		}
 	}()
 
@@ -54,8 +58,10 @@ func (w *WorkerBase) process() error {
 	}
 
 	if err = w.client.Do(w.req, w.resp); err != nil {
+		end = time.Now().UnixNano()
 		return err
 	}
+	end = time.Now().UnixNano()
 
 	status := w.resp.StatusCode()
 	_, ok := w.stats.Responses[(ResponseCode(status))]
