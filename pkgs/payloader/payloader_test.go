@@ -104,7 +104,7 @@ func TestPayLoader_RunFastHTTP2(t *testing.T) {
 				Client:        "fasthttp-2",
 				VerboseTicker: time.Second,
 				SkipVerify:    true,
-				Verbose:       true,
+				Verbose:       false,
 			}},
 			want: &GoPayloaderResults{
 				CompletedReqs: 2100,
@@ -128,7 +128,7 @@ func TestPayLoader_RunFastHTTP2(t *testing.T) {
 				Client:        "fasthttp-2",
 				VerboseTicker: time.Second,
 				SkipVerify:    true,
-				Verbose:       true,
+				Verbose:       false,
 			}},
 		},
 		{
@@ -145,7 +145,7 @@ func TestPayLoader_RunFastHTTP2(t *testing.T) {
 				Client:        "fasthttp-2",
 				VerboseTicker: time.Second,
 				SkipVerify:    true,
-				Verbose:       true,
+				Verbose:       false,
 			}},
 			want: &GoPayloaderResults{
 				CompletedReqs: 100,
@@ -172,7 +172,7 @@ func TestPayLoader_RunFastHTTP2(t *testing.T) {
 				JwtKey:        filepath.Join("..", "..", "test", "private-key.pem"),
 				SendJWT:       true,
 				SkipVerify:    true,
-				Verbose:       true,
+				Verbose:       false,
 			}},
 			want: &GoPayloaderResults{
 				CompletedReqs: 2100,
