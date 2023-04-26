@@ -64,7 +64,7 @@ var (
 
 var runCmd = &cobra.Command{
 	Use:   "run <host>",
-	Short: "Load test HTTP/S server - supports http/1.1 http/2 http/3",
+	Short: "Load test HTTP/S server - supports HTTP/1.1 HTTP/2 HTTP/3",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return errors.New("no request uri specified as argument")
