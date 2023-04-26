@@ -217,8 +217,7 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 	p.stopTimer()
 	stopStatsCalc()
 
-	plResults := NewPayLoaderResults(p)
-	return plResults.ComputeResults(workers, results)
+	return p.ComputeResults(workers, results)
 }
 
 func (p *PayLoader) calcReqStats(ctx context.Context, recv <-chan time.Duration, result *GoPayloaderResults) {
@@ -331,5 +330,8 @@ func (p *PayLoader) getProgressBar(endTime time.Duration, reqTarget int) (*pterm
 }
 
 func (p *PayLoader) Run() (*GoPayloaderResults, error) {
+	if err := p.config.Validate(); err != nil {
+		return nil, err
+	}
 	return p.handleReqs()
 }

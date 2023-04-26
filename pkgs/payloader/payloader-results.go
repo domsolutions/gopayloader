@@ -6,15 +6,7 @@ import (
 	"time"
 )
 
-type PayloaderResults struct {
-	*PayLoader
-}
-
-func NewPayLoaderResults(pl *PayLoader) *PayloaderResults {
-	return &PayloaderResults{pl}
-}
-
-func (p *PayloaderResults) ComputeResults(workers []worker.Worker, results *GoPayloaderResults) (*GoPayloaderResults, error) {
+func (p *PayLoader) ComputeResults(workers []worker.Worker, results *GoPayloaderResults) (*GoPayloaderResults, error) {
 	results.Start = p.startTime
 	results.End = p.stopTime
 	results.Total = p.stopTime.Sub(p.startTime)

@@ -108,8 +108,6 @@ func GetFastHTTPClient2(config *http_clients.Config) (http_clients.GoPayLoaderCl
 		return nil, err
 	}
 
-	// TODO hangs when server is http/1.1
-
 	if err := http2.ConfigureClient(client.(*Client).client, http2.ClientOpts{
 		MaxResponseTime: config.ReadTimeout,
 	}); err != nil {

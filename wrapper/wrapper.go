@@ -59,14 +59,21 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 		resPayLoader <- results
 	}()
 
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	select {
 	case <-c:
 		// user pressed ctrl+c
 		cancel()
-		ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
+		timeout := 5 * time.Second
+		deadline := time.Now().Add(timeout)
+
+		pterm.Info.Printf("Waiting for %s for results \n", timeout)
+
+		ctx, c := context.WithDeadline(context.Background(), deadline)
+		defer c()
+
 		select {
 		case results := <-resPayLoader:
 			cli.Display(results)

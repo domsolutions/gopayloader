@@ -21,7 +21,6 @@ const (
 	argWriteTimeout = "write-timeout"
 	argVerbose      = "verbose"
 	argTicker       = "ticker"
-	argHTTPV2       = "http-v2"
 	argJWTKey       = "jwt-key"
 	argJWTSUb       = "jwt-sub"
 	argJWTIss       = "jwt-iss"
@@ -108,7 +107,6 @@ func init() {
 	runCmd.Flags().UintVarP(&conns, argConnections, "c", 1, "Number of simultaneous connections")
 	runCmd.Flags().BoolVarP(&disableKeepAlive, argKeepAlive, "k", false, "Disable keep-alive connections")
 
-	// TODO test http/2 works - just hangs
 	runCmd.Flags().BoolVar(&skipVerify, argVerifySigner, false, "Skip verify SSL cert signer")
 	runCmd.Flags().DurationVarP(&duration, argTime, "t", 0, "Execution time window, if used with -r will uniformly distribute reqs within time window, without -r reqs are unlimited")
 	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 5*time.Second, "Read timeout")
@@ -126,11 +124,6 @@ func init() {
 `+worker.HttpClientFastHTTP2+` for fast http/2 requests
 `+worker.HttpClientNetHTTP+` for standard net/http requests supporting http/1.1 http/2
 `+worker.HttpClientNetHTTP3+` for standard net/http requests supporting http/3 using quic-go`)
-
-	// TODO in stats, bytes received... received means reading body, possibly rps reduce
-	// TODO sort out http client flags
-
-	// TODO connection timeout - hangs using http2 client to connect to http1 server
 
 	runCmd.Flags().StringVar(&jwtKID, argJWTKid, "", "JWT KID")
 	runCmd.Flags().StringVar(&jwtKey, argJWTKey, "", "JWT signing private key path")

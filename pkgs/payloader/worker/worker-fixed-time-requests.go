@@ -14,7 +14,8 @@ func (w *WorkerFixedTimeRequests) Run(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	w.config.StartTrigger.Wait()
-	deadline, _ := context.WithTimeout(context.Background(), w.config.Until)
+	deadline, c := context.WithTimeout(context.Background(), w.config.Until)
+	defer c()
 	newReq := time.NewTicker(w.config.ReqEvery)
 
 	for {
