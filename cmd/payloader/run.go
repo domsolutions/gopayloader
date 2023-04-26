@@ -121,7 +121,7 @@ func init() {
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
 
 	runCmd.Flags().StringVar(&client, argClient, worker.HttpClientFastHTTP1, worker.HttpClientFastHTTP1+` for fast http/1.1 requests
-`+worker.HttpClientFastHTTP2+` for fast http/2 requests
+`+worker.HttpClientFastHTTP2+` for fast http/2 requests 
 `+worker.HttpClientNetHTTP+` for standard net/http requests supporting http/1.1 http/2
 `+worker.HttpClientNetHTTP3+` for standard net/http requests supporting http/3 using quic-go`)
 

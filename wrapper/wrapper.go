@@ -69,7 +69,7 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 		timeout := 5 * time.Second
 		deadline := time.Now().Add(timeout)
 
-		pterm.Info.Printf("Waiting for %s for results \n", timeout)
+		pterm.Info.Printf("User aborted; waiting %s for results before exiting \n", timeout)
 
 		ctx, c := context.WithDeadline(context.Background(), deadline)
 		defer c()

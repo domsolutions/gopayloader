@@ -49,7 +49,10 @@ func (c *cache) get(count int64) (<-chan string, <-chan error) {
 		return recv, errs
 	}
 
-	// scan first line to skip as not a jwt but is int64 representing number of jwts
+	// scan first line to skip as not a jwt but is int64 representing number of jwts, need to reset scanner also
+	// to avoid invalid char
+	c.scanner = bufio.NewScanner(c.f)
+	c.scanner.Split(bufio.ScanLines)
 	if !c.scanner.Scan() {
 		errs <- fmt.Errorf("jwt_generator: retrieving; not able to read first line of cache; %v", c.scanner.Err())
 		close(errs)

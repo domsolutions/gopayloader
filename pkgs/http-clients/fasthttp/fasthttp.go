@@ -109,7 +109,7 @@ func GetFastHTTPClient2(config *http_clients.Config) (http_clients.GoPayLoaderCl
 	}
 
 	if err := http2.ConfigureClient(client.(*Client).client, http2.ClientOpts{
-		MaxResponseTime: config.ReadTimeout,
+		//MaxResponseTime: config.ReadTimeout + config.WriteTimeout,
 	}); err != nil {
 		return nil, err
 	}

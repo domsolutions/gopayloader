@@ -24,7 +24,7 @@ type Config struct {
 	WriteTimeout     time.Duration
 	Method           string
 	Verbose          bool
-	Ticker           time.Duration
+	VerboseTicker    time.Duration
 	JwtKID           string
 	JwtKey           string
 	JwtSub           string
@@ -54,7 +54,7 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		WriteTimeout:     writeTimeout,
 		Method:           method,
 		Verbose:          verbose,
-		Ticker:           ticker,
+		VerboseTicker:    ticker,
 		JwtKID:           jwtKID,
 		JwtKey:           jwtKey,
 		JwtSub:           jwtSub,
@@ -148,7 +148,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.Ticker == 0 {
+	if c.VerboseTicker == 0 {
 		return errors.New("ticker value can't be zero")
 	}
 

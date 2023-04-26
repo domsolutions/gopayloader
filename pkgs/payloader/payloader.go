@@ -146,6 +146,11 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 		msg := printer.Sprintf("Running requests every %s for every %d connection/s for total %d request/s against %s\n",
 			reqEvery.String(), int(p.config.Conns), p.config.ReqTarget, p.config.ReqURI)
 		pterm.Info.Printf(msg)
+	} else if p.config.Duration != 0 && p.config.ReqTarget == 0 {
+		reqEvery = time.Duration(float64(p.config.Duration) / (float64(p.config.ReqTarget) / float64(p.config.Conns)))
+		msg := printer.Sprintf("Running requests for %s for %d connection/s against %s\n",
+			p.config.Duration, int(p.config.Conns), p.config.ReqURI)
+		pterm.Info.Printf(msg)
 	} else {
 		msg := printer.Sprintf("Running %d request/s with %d connection/s against %s\n", p.config.ReqTarget, int(p.config.Conns), p.config.ReqURI)
 		pterm.Info.Printf(msg)
@@ -253,7 +258,7 @@ func (p *PayLoader) calcReqStats(ctx context.Context, recv <-chan time.Duration,
 }
 
 func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker, reqTarget int, endTime time.Duration) {
-	tick := time.NewTicker(p.config.Ticker)
+	tick := time.NewTicker(p.config.VerboseTicker)
 	var stats worker.Stats
 	var prevSuccess, prevError int64 = 0, 0
 	var progress *pterm.ProgressbarPrinter
@@ -295,7 +300,7 @@ func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker
 				pterm.Green(pterm.Sprintf("%d requests successful", success)))
 
 			if endTime != 0 {
-				progress.Add(int(p.config.Ticker.Seconds()))
+				progress.Add(int(p.config.VerboseTicker.Seconds()))
 			} else {
 				progress.Add(int(success-prevSuccess) + int(errs-prevError))
 			}

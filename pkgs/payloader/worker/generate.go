@@ -98,6 +98,7 @@ func jwtMiddleware(w *WorkerBase) {
 	//	pterm.Error.Printf("Failed to get jwts from cache, got error; %v \n", err)
 	//	return TODO fix
 	case jwt := <-w.config.JwtStreamReceiver:
+		//fmt.Printf("GOT JWT %sHELP \n", jwt)
 		w.req.SetHeader(w.config.JWTHeader, jwt)
 	}
 }

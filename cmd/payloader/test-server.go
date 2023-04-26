@@ -112,7 +112,7 @@ var runServerCmd = &cobra.Command{
 					log.Println(err)
 				}
 				if debug {
-					log.Printf("%+v\n", r.Header)
+					log.Printf("%+v\n", r.Header.Get("Some-Jwt"))
 				}
 			})
 
