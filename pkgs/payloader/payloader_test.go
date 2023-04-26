@@ -169,7 +169,7 @@ func TestPayLoader_RunFastHTTP2(t *testing.T) {
 				Client:        "fasthttp-2",
 				VerboseTicker: time.Second,
 				JwtHeader:     "some-jwt",
-				JwtKey:        filepath.Join("..", "..", "test", "private-key.pem"),
+				JwtKey:        filepath.Join("..", "..", "test", "private-key-jwt.pem"),
 				SendJWT:       true,
 				SkipVerify:    true,
 				Verbose:       false,
@@ -301,7 +301,7 @@ func TestPayLoader_RunFastHTTP1(t *testing.T) {
 				Client:        "fasthttp-1",
 				VerboseTicker: time.Second,
 				JwtHeader:     "some-jwt",
-				JwtKey:        filepath.Join("..", "..", "test", "private-key.pem"),
+				JwtKey:        filepath.Join("..", "..", "test", "private-key-jwt.pem"),
 				SendJWT:       true,
 			}},
 			want: &GoPayloaderResults{
