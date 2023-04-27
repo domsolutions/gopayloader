@@ -4,7 +4,8 @@
   <a href="https://github.com/domsolutions/gopayloader/actions/workflows/go.yml"><img src="https://github.com/domsolutions/gopayloader/actions/workflows/go.yml/badge.svg" alt="Build status"></a>
 </p>
 
-Gopayloader is a HTTP/S benchmarking tool. Inspired by bombardier it also uses [fasthttp](https://github.com/valyala/fasthttp) which allows for fast creation and sending of requests due to low allocations and lots of other improvements.
+Gopayloader is a HTTP/S benchmarking tool. Inspired by [bombardier](https://github.com/codesenberg/bombardier/) it also uses [fasthttp](https://github.com/valyala/fasthttp) which allows for fast creation and sending of requests due to low allocations and lots of other improvements. But with 
+added improvement of also supporting fashttp for HTTP/2.
 It uses this client by default, a different client can be used with `--client` flag.
 
 Supports all HTTP versions, using [quic-go](https://github.com/quic-go/quic-go) for HTTP/3 client with `--client nethttp-3`. For HTTP/2 can use fasthttp with `--client fasthttp-2` or standard core golang `net/http` with `--client nethttp`
@@ -195,4 +196,23 @@ To remove all generated jwts;
 
 ## Benchmark comparisons
 
+All tests are running against below HTTP/1.1 server;
 
+```shell
+./gopayloader http-server -p 8081 -s 1 --fasthttp-1
+```
+
+Tested running for `30 seconds` reqs over `125` connections
+
+Gopayloader tested with 
+```shell
+./gopayloader run http://localhost:8081 -c 125 --time 30s 
+```
+
+achieved mean RPS of `53098.428` 
+
+| Tool                                                     | Cmd                                     | Mean RPS | Gopayloader improvewment              
+|----------------------------------------------------------|-----------------------------------------|----------|---------------------------------------|
+| [k6](https://github.com/grafana/k6)                      | `k6 run --vus 125 --duration 30s k6.js` | 15268    | <span style="color:green">235%</span> |
+| [bombardier](https://github.com/codesenberg/bombardier/) | `bombardier http://localhost:8081 -c 125 --duration=30s` | 51311    | <span style="color:green">3.4%</span> |
+| [hey](https://github.com/rakyll/hey)                     | `hey -z 30s -c 125 http://localhost:8081` | 22644    | <span style="color:green">134%</span> |
