@@ -138,7 +138,9 @@ func (c *Config) Validate() error {
 			}
 			return fmt.Errorf("config: jwt key error checking file exists; %v", err)
 		}
-
+		if c.ReqTarget == 0 {
+			return errors.New("can only send jwts when request number is specified")
+		}
 		c.SendJWT = true
 	}
 
