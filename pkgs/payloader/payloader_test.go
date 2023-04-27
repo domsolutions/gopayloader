@@ -3,6 +3,7 @@ package payloader
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"github.com/domsolutions/gopayloader/config"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"github.com/quic-go/quic-go"
@@ -138,7 +139,7 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 		name    string
 		fields  fields
 		want    *GoPayloaderResults
-		wantErr bool
+		wantErr error
 		check   func(t *testing.T)
 	}{
 		{
@@ -276,13 +277,50 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 				}
 			},
 		},
+		{
+			name: "Error hostname incorrect format - missing port",
+			fields: fields{config: &config.Config{
+				Ctx:           context.Background(),
+				ReqURI:        "http://localhost/",
+				ReqTarget:     2100,
+				Conns:         101,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "GET",
+				Client:        client,
+				VerboseTicker: time.Second,
+				Headers:       []string{"content-type: application/json"},
+				JwtHeader:     "some-jwt",
+				JwtAud:        "some-aud",
+				JwtSub:        "some-subject",
+				JwtIss:        "some-issuer",
+				JwtKID:        "13325575tevdfbdsfsf",
+				JwtKey:        filepath.Join("..", "..", "test", "private-key-jwt.pem"),
+				SkipVerify:    true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 0,
+				FailedReqs:    0,
+				Errors:        nil,
+			},
+			wantErr: errors.New("url not in correct format http://localhost/ needs to be like protocol://host:port/path i.e. https://localhost:443/some-path"),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewPayLoader(tt.fields.config)
 			got, err := p.Run()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
+			if err != nil {
+				if tt.wantErr == nil {
+					t.Errorf("Run() error = %v, wanted no error", err)
+					return
+				}
+				if tt.wantErr.Error() != err.Error() {
+					t.Errorf("Run() error = %v, wanted error %v", err, tt.wantErr)
+					return
+				}
+			}
+			if err != nil {
 				return
 			}
 

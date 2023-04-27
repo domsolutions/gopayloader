@@ -59,7 +59,7 @@ var (
 )
 
 var runCmd = &cobra.Command{
-	Use:   "run <host>",
+	Use:   "run <host>(host format - protocol://host:port/path i.e. https://localhost:443/some-path)",
 	Short: "Load test HTTP/S server - supports HTTP/1.1 HTTP/2 HTTP/3",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {

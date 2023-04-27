@@ -3,3 +3,5 @@ private-key.pem
 .idea
 server_*
 *.qlog
+gopayloader.exe
+gopayloader.zip

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -71,6 +72,10 @@ var (
 	errConnLimit = errors.New("connections can't be more than requests")
 )
 
+const regEx = `https?:\/\/(.)*(?::\d+)`
+
+var regExHostURI = regexp.MustCompile(regEx)
+
 var allowedMethods = [4]string{
 	"GET",
 	"PUT",
@@ -90,6 +95,10 @@ func (c *Config) Validate() error {
 	}
 	if c.Conns == 0 {
 		return errors.New("0 connections not allowed")
+	}
+
+	if !regExHostURI.MatchString(c.ReqURI) {
+		return fmt.Errorf("url not in correct format %s needs to be like protocol://host:port/path i.e. https://localhost:443/some-path", c.ReqURI)
 	}
 
 	if c.MTLSKey != "" {
