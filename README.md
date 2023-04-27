@@ -144,8 +144,11 @@ example body;
 
 Note `jti` will be different for each jwt.
 
+Will set jwt value = header field `my-jwt` and sign with key `./private-key.pem` and KID `3434645743124`
+
+`./gopayloader run http://localhost:8081 -c 150 -r 1000000 --jwt-header "my-jwt" --jwt-key ./private-key.pem --jwt-kid 3434645743124 --jwt-sub "my-subject" --jwt-aud "some-audience" --jwt-iss "some-issuer"`
+
 ```shell
-./gopayloader run http://localhost:8081 -c 150 -r 1000000 --jwt-header "my-jwt" --jwt-key ./private-key.pem --jwt-kid 3434645743124 --jwt-sub "my-subject" --jwt-aud "some-audience" --jwt-iss "some-issuer"
 Gopayloader v0.1.0 HTTP/JWT authentication benchmark tool 
 https://github.com/domsolutions/gopayloader
 
