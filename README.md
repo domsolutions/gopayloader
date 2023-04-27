@@ -2,6 +2,7 @@
 
 [![Build status](https://github.com/domsolutions/gopayloader/actions/workflows/go.yml/badge.svg)](https://github.com/domsolutions/gopayloader/actions/workflows/go.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/domsolutions/gopayloader)](https://goreportcard.com/report/github.com/domsolutions/gopayloader)
+[![GoDoc](https://godoc.org/github.com/domsolutions/gopayloader?status.svg)](http://godoc.org/github.com/domsolutions/gopayloader)
 
 Gopayloader is a HTTP/S benchmarking tool. Inspired by [bombardier](https://github.com/codesenberg/bombardier/) it also uses [fasthttp](https://github.com/valyala/fasthttp) which allows for fast creation and sending of requests due to low allocations and lots of other improvements. But with 
 added improvement of also supporting fashttp for HTTP/2.
