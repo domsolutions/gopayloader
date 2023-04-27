@@ -32,14 +32,13 @@ type Config struct {
 	JwtAud           string
 	JwtHeader        string
 	SendJWT          bool
-	ClearCache       bool
 	Headers          []string
 	Body             string
 	BodyFile         string
 	Client           string
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, sendJWT, clearCache bool, headers []string, body, bodyFile string, client string) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, headers []string, body, bodyFile string, client string) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
@@ -61,8 +60,6 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		JwtIss:           jwtIss,
 		JwtAud:           jwtAud,
 		JwtHeader:        jwtHeader,
-		SendJWT:          sendJWT,
-		ClearCache:       clearCache,
 		Headers:          headers,
 		Body:             body,
 		BodyFile:         bodyFile,
@@ -114,20 +111,26 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.SendJWT {
+	if (c.JwtHeader == "") != (c.JwtKey == "") {
 		if c.JwtHeader == "" {
 			return errors.New("config: empty jwt header")
 		}
 
-		if c.JwtKey != "" {
-			_, err := os.OpenFile(c.JwtKey, os.O_RDONLY, os.ModePerm)
-			if err != nil {
-				if os.IsNotExist(err) {
-					return errors.New("config: jwt key does not exist")
-				}
-				return fmt.Errorf("config: jwt key error checking file exists; %v", err)
-			}
+		if c.JwtKey == "" {
+			return errors.New("empty jwt key")
 		}
+	}
+
+	if c.JwtKey != "" {
+		_, err := os.OpenFile(c.JwtKey, os.O_RDONLY, os.ModePerm)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return errors.New("config: jwt key does not exist")
+			}
+			return fmt.Errorf("config: jwt key error checking file exists; %v", err)
+		}
+
+		c.SendJWT = true
 	}
 
 	if len(c.Headers) > 0 {

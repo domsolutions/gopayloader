@@ -24,7 +24,7 @@ func init() {
 	// give time for server to spin up
 	time.Sleep(1 * time.Second)
 
-	err := os.RemoveAll(jwtSaveDir)
+	err := os.RemoveAll(JwtCacheDir)
 	if err != nil {
 		log.Printf("Failed to clear jwt cache dir; %v", err)
 	}
@@ -139,6 +139,7 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 		fields  fields
 		want    *GoPayloaderResults
 		wantErr bool
+		check   func(t *testing.T)
 	}{
 		{
 			name: "GET 10 connections for 2100 requests",
@@ -216,7 +217,6 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 				VerboseTicker: time.Second,
 				JwtHeader:     "some-jwt",
 				JwtKey:        filepath.Join("..", "..", "test", "private-key-jwt.pem"),
-				SendJWT:       true,
 				SkipVerify:    true,
 			}},
 			want: &GoPayloaderResults{
@@ -226,6 +226,54 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 					200: 2100,
 				},
 				Errors: nil,
+			},
+			check: func(t *testing.T) {
+				_, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-672c3f20f01d56f616b14d9c2b213590abea414a1d19c516b1269ceb0232b345.txt"), os.O_RDONLY, os.ModePerm)
+				if err != nil {
+					if os.IsNotExist(err) {
+						t.Fatal(err)
+					}
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "GET 101 connections for 2100 requests with jwts with all available jwt fields and header",
+			fields: fields{config: &config.Config{
+				Ctx:           context.Background(),
+				ReqURI:        addr,
+				ReqTarget:     2100,
+				Conns:         101,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "GET",
+				Client:        client,
+				VerboseTicker: time.Second,
+				Headers:       []string{"content-type: application/json"},
+				JwtHeader:     "some-jwt",
+				JwtAud:        "some-aud",
+				JwtSub:        "some-subject",
+				JwtIss:        "some-issuer",
+				JwtKID:        "13325575tevdfbdsfsf",
+				JwtKey:        filepath.Join("..", "..", "test", "private-key-jwt.pem"),
+				SkipVerify:    true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 2100,
+				FailedReqs:    0,
+				Responses: map[worker.ResponseCode]int64{
+					200: 2100,
+				},
+				Errors: nil,
+			},
+			check: func(t *testing.T) {
+				_, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-ee6963c0246fe92609c0a80921c3ffe35e4d487c4b494d38bcdff151efc41ff4.txt"), os.O_RDONLY, os.ModePerm)
+				if err != nil {
+					if os.IsNotExist(err) {
+						t.Fatal(err)
+					}
+					t.Fatal(err)
+				}
 			},
 		},
 	}
@@ -259,6 +307,10 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 			}
 			if !reflect.DeepEqual(tt.want.Responses, got.Responses) {
 				t.Errorf("response codes not expected")
+			}
+
+			if tt.check != nil {
+				tt.check(t)
 			}
 		})
 	}

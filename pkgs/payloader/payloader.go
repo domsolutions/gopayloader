@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	jwtSaveDir string
+	JwtCacheDir string
 )
 
 func init() {
@@ -30,7 +30,7 @@ func init() {
 	if err != nil {
 		return
 	}
-	jwtSaveDir = filepath.Join(homeDir, ".cache", cacheDir)
+	JwtCacheDir = filepath.Join(homeDir, ".cache", cacheDir)
 }
 
 type PayLoader struct {
@@ -89,22 +89,11 @@ func (p *PayLoader) startWorkers(wg *sync.WaitGroup) {
 }
 
 func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
-	if p.config.ClearCache {
-		if jwtSaveDir == "" {
-			pterm.Error.Println("Cache directory couldn't be determined")
-		} else {
-			pterm.Debug.Println("Clearing JWT cache")
-			if err := os.RemoveAll(jwtSaveDir); err != nil {
-				pterm.Error.Printf("Failed to clear jwt cache; %v", err)
-			}
-		}
-	}
-
 	var jwtStreamErrs <-chan error
 	var jwtStream <-chan string
 
 	if p.config.SendJWT && p.config.ReqTarget != 0 {
-		if jwtSaveDir == "" {
+		if JwtCacheDir == "" {
 			pterm.Error.Println("Can't save jwts if no cache directory")
 			return nil, errors.New("cache directory couldn't be determined")
 		}
@@ -120,10 +109,10 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 			JwtAud:     p.config.JwtAud,
 		})
 
-		if err := os.MkdirAll(jwtSaveDir, 0755); err != nil {
+		if err := os.MkdirAll(JwtCacheDir, 0755); err != nil {
 			return nil, err
 		}
-		if err := jwt.Generate(p.config.ReqTarget, jwtSaveDir, false); err != nil {
+		if err := jwt.Generate(p.config.ReqTarget, JwtCacheDir, false); err != nil {
 			return nil, err
 		}
 		jwtStream, jwtStreamErrs = jwt.JWTS(p.config.ReqTarget)

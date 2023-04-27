@@ -26,9 +26,7 @@ const (
 	argJWTIss       = "jwt-iss"
 	argJWTAud       = "jwt-aud"
 	argJWTHeader    = "jwt-header"
-	argJWTEnable    = "jwt-enable"
 	argJWTKid       = "jwt-kid"
-	argClearCache   = "clear-cache"
 	argHeaders      = "headers"
 	argBody         = "body"
 	argBodyFile     = "body-file"
@@ -54,9 +52,7 @@ var (
 	jwtIss           string
 	jwtAud           string
 	jwtHeader        string
-	sendJWT          bool
 	jwtKID           string
-	clearCache       bool
 	headers          *[]string
 	body             string
 	bodyFile         string
@@ -93,8 +89,6 @@ var runCmd = &cobra.Command{
 			jwtIss,
 			jwtAud,
 			jwtHeader,
-			sendJWT,
-			clearCache,
 			*headers,
 			body,
 			bodyFile,
@@ -131,11 +125,9 @@ func init() {
 	runCmd.Flags().StringVar(&jwtIss, argJWTIss, "", "JWT issuer (iss) claim")
 	runCmd.Flags().StringVar(&jwtSub, argJWTSUb, "", "JWT subject (sub) claim")
 	runCmd.Flags().StringVar(&jwtHeader, argJWTHeader, "", "JWT header field name")
-	runCmd.Flags().BoolVar(&sendJWT, argJWTEnable, false, "Send JWTs with requests")
-	runCmd.Flags().BoolVar(&clearCache, argClearCache, false, "Delete all generated jwts")
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
-	runCmd.MarkFlagsRequiredTogether(argJWTKey, argJWTEnable)
+	runCmd.MarkFlagsRequiredTogether(argJWTKey, argJWTHeader)
 	runCmd.MarkFlagsMutuallyExclusive(argBody, argBodyFile)
 
 	rootCmd.AddCommand(runCmd)
