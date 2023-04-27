@@ -28,7 +28,7 @@ is all of CPU cycles can be dedicated to sending the requests thus achieving hig
 Can install with (supported go versions >= 1.19)
 
 ```shell
-go install github.com/domsolutions/gopayloader@latest TODO not working
+go install github.com/domsolutions/gopayloader@latest 
 ```
 
 Or download pre-compiled binaries from [releases](https://github.com/domsolutions/gopayloader/releases)
@@ -209,9 +209,9 @@ Gopayloader tested with
 ./gopayloader run http://localhost:8081 -c 125 --time 30s 
 ```
 
-achieved mean RPS of `53098.428` 
+achieved mean RPS of `53098` 
 
-| Tool                                                     | Cmd                                     | Mean RPS | Gopayloader improvewment              
+| Tool                                                     | Cmd                                     | Mean RPS | Gopayloader improvement              
 |----------------------------------------------------------|-----------------------------------------|----------|---------------------------------------|
 | [k6](https://github.com/grafana/k6)                      | `k6 run --vus 125 --duration 30s k6.js` | 15268    | <span style="color:green">235%</span> |
 | [bombardier](https://github.com/codesenberg/bombardier/) | `bombardier http://localhost:8081 -c 125 --duration=30s` | 51311    | <span style="color:green">3.4%</span> |
