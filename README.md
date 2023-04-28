@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/domsolutions/gopayloader)](https://goreportcard.com/report/github.com/domsolutions/gopayloader)
 [![GoDoc](https://godoc.org/github.com/domsolutions/gopayloader?status.svg)](http://godoc.org/github.com/domsolutions/gopayloader)
 
-Gopayloader is a HTTP/S benchmarking tool. Inspired by [bombardier](https://github.com/codesenberg/bombardier/) it also uses [fasthttp](https://github.com/valyala/fasthttp) which allows for fast creation and sending of requests due to low allocations and lots of other improvements. But with 
+Gopayloader is an HTTP/S benchmarking tool. Inspired by [bombardier](https://github.com/codesenberg/bombardier/) it also uses [fasthttp](https://github.com/valyala/fasthttp) which allows for fast creation and sending of requests due to low allocations and lots of other improvements. But with 
 added improvement of also supporting fashttp for HTTP/2.
 It uses this client by default, a different client can be used with `--client` flag.
 
@@ -14,7 +14,9 @@ Supports ability to generate custom JWTs to send in headers with payload (only l
 tested is JWT authenticated. Each JWT generated will be unique as contains a unique `jti` in claims i.e.
 
 ```json
-"jti" : "8f2d1472-084c-4662-ae74-04e0f1de4993"
+{
+  "jti": "8f2d1472-084c-4662-ae74-04e0f1de4993"
+}
 ```
 
 A private key is supplied as a flag with optional flags to set other claims i.e. `sub` `aud`, `iss`. It will then check if the required number of jwts has already
@@ -22,6 +24,7 @@ been generated in a previous test by checking a file on disk. All JWTs are saved
 huge number of jwts to be generated without affecting in-memory use of gopayloader. Once all jwts have been generated
 the tests begin, and jwts are streamed from disk to requests. This keeps the memory footprint low. The other major benefit to pre-generating
 is all of CPU cycles can be dedicated to sending the requests thus achieving higher RPS.
+
 
 ## Installation
 
@@ -75,7 +78,7 @@ Flags:
 
 ```
 
-By default it runs in quiet mode to dedicate all CPU cycles to sending requests to achieve max RPS. Verbose
+By default, it runs in quiet mode to dedicate all CPU cycles to sending requests to achieve max RPS. Verbose
 mode can be enabled with `-v` flag.
 
 To run `1000000` requests across `150` connections;
@@ -211,8 +214,8 @@ Gopayloader tested with
 
 achieved mean RPS of `53098` 
 
-| Tool                                                     | Cmd                                     | Mean RPS | Gopayloader improvement              
-|----------------------------------------------------------|-----------------------------------------|----------|---------------------------------------|
-| [k6](https://github.com/grafana/k6)                      | `k6 run --vus 125 --duration 30s k6.js` | 15268    | <span style="color:green">235%</span> |
+| Tool                                                     | Cmd                                                      | Mean RPS | Gopayloader improvement               |
+|----------------------------------------------------------|----------------------------------------------------------|----------|---------------------------------------|
+| [k6](https://github.com/grafana/k6)                      | `k6 run --vus 125 --duration 30s k6.js`                  | 15268    | <span style="color:green">235%</span> |
 | [bombardier](https://github.com/codesenberg/bombardier/) | `bombardier http://localhost:8081 -c 125 --duration=30s` | 51311    | <span style="color:green">3.4%</span> |
-| [hey](https://github.com/rakyll/hey)                     | `hey -z 30s -c 125 http://localhost:8081` | 22644    | <span style="color:green">134%</span> |
+| [hey](https://github.com/rakyll/hey)                     | `hey -z 30s -c 125 http://localhost:8081`                | 22644    | <span style="color:green">134%</span> |
