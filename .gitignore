@@ -5,3 +5,6 @@ server_*
 *.qlog
 gopayloader.exe
 gopayloader.zip
+gopayloader-darwin-amd64
+gopayloader-linux-amd64
+gopayloader-windows-amd64.exe

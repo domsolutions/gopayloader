@@ -278,6 +278,45 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 			},
 		},
 		{
+			name: "GET RSA JWT",
+			fields: fields{config: &config.Config{
+				Ctx:           context.Background(),
+				ReqURI:        addr,
+				ReqTarget:     10,
+				Conns:         1,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "GET",
+				Client:        client,
+				VerboseTicker: time.Second,
+				Headers:       []string{"content-type: application/json"},
+				JwtHeader:     "some-jwt",
+				JwtAud:        "some-aud",
+				JwtSub:        "some-subject",
+				JwtIss:        "some-issuer",
+				JwtKID:        "13325575tevdfbdsfsf",
+				JwtKey:        filepath.Join("..", "..", "test", "rsa.private"),
+				SkipVerify:    true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 10,
+				FailedReqs:    0,
+				Responses: map[worker.ResponseCode]int64{
+					200: 10,
+				},
+				Errors: nil,
+			},
+			check: func(t *testing.T) {
+				_, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-ce2db7adfae3270cb01fd7053b035243213d6e6bbd9ea917ee656eacb94e22e2.txt"), os.O_RDONLY, os.ModePerm)
+				if err != nil {
+					if os.IsNotExist(err) {
+						t.Fatal(err)
+					}
+					t.Fatal(err)
+				}
+			},
+		},
+		{
 			name: "Error hostname incorrect format - missing port",
 			fields: fields{config: &config.Config{
 				Ctx:           context.Background(),

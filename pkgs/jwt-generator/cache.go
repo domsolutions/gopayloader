@@ -22,12 +22,12 @@ func newCache(f *os.File) (*cache, error) {
 	c.scanner = bufio.NewScanner(c.f)
 	c.scanner.Split(bufio.ScanLines)
 	if c.scanner.Scan() {
-		meta := c.scanner.Bytes()
-		if len(meta) < 8 {
-			return nil, fmt.Errorf("jwt_generator: corrupt jwt cache, wanted 8 bytes got %d", len(meta))
+		bb := make([]byte, 8)
+		_, err := f.ReadAt(bb, 0)
+		if err != nil {
+			return nil, err
 		}
-		c.count = int64(binary.LittleEndian.Uint64(meta[0:8]))
-
+		c.count = int64(binary.LittleEndian.Uint64(bb))
 		return &c, nil
 	}
 	return &c, nil
@@ -115,11 +115,13 @@ func (c *cache) save(tokens []string) error {
 	}
 
 	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, uint64(int64(add)+c.count))
+	newCount := uint64(int64(add) + c.count)
+	binary.LittleEndian.PutUint64(b, newCount)
 	_, err = c.f.WriteAt(b, 0)
 	if err != nil {
 		return err
 	}
+
 	_, err = c.f.WriteAt([]byte{byte('\n')}, 9)
 	if err != nil {
 		return err

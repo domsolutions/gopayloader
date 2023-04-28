@@ -81,7 +81,7 @@ func (j *JWTGenerator) Generate(reqJwtCount int64, dir string, retrying bool) er
 			return err
 		}
 		f.Close()
-		pterm.Error.Printf("jwt cache %s file corrupt, attempting to delete and recreate", fname)
+		pterm.Debug.Printf("jwt cache %s file corrupt, attempting to delete and recreate; got error; %v \n", fname, err)
 		if err := os.Remove(fname); err != nil {
 			pterm.Error.Printf("Couldn't remove cache file %s; %v", fname, err)
 			return err
