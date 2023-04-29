@@ -36,6 +36,30 @@ go install github.com/domsolutions/gopayloader@latest
 
 Or download pre-compiled binaries from [releases](https://github.com/domsolutions/gopayloader/releases)
 
+## Benchmark comparisons
+
+All tests are running against below HTTP/1.1 server;
+
+```shell
+./gopayloader http-server -p 8081 -s 1 --fasthttp-1
+```
+
+Tested running for `30 seconds` reqs over `125` connections
+
+Gopayloader tested with
+```shell
+./gopayloader run http://localhost:8081 -c 125 --time 30s 
+```
+
+achieved mean RPS of **53,098**
+
+| Tool                                                     | Cmd                                                      | Mean RPS | Gopayloader improvement               |
+|----------------------------------------------------------|----------------------------------------------------------|----------|---------------------------------------|
+| [k6](https://github.com/grafana/k6)                      | `k6 run --vus 125 --duration 30s k6.js`                  | 15,268   | <span style="color:green">235%</span> |
+| [hey](https://github.com/rakyll/hey)                     | `hey -z 30s -c 125 http://localhost:8081`                | 22,644   | <span style="color:green">134%</span> |
+| [bombardier](https://github.com/codesenberg/bombardier/) | `bombardier http://localhost:8081 -c 125 --duration=30s` | 51,311   | <span style="color:green">3.4%</span> |
+
+
 ## Usage
 
 To list all available flags run;
@@ -196,26 +220,3 @@ To remove all generated jwts;
 ```shell
 ./gopayloader clear-cache 
 ```
-
-## Benchmark comparisons
-
-All tests are running against below HTTP/1.1 server;
-
-```shell
-./gopayloader http-server -p 8081 -s 1 --fasthttp-1
-```
-
-Tested running for `30 seconds` reqs over `125` connections
-
-Gopayloader tested with 
-```shell
-./gopayloader run http://localhost:8081 -c 125 --time 30s 
-```
-
-achieved mean RPS of `53098` 
-
-| Tool                                                     | Cmd                                                      | Mean RPS | Gopayloader improvement               |
-|----------------------------------------------------------|----------------------------------------------------------|----------|---------------------------------------|
-| [k6](https://github.com/grafana/k6)                      | `k6 run --vus 125 --duration 30s k6.js`                  | 15268    | <span style="color:green">235%</span> |
-| [bombardier](https://github.com/codesenberg/bombardier/) | `bombardier http://localhost:8081 -c 125 --duration=30s` | 51311    | <span style="color:green">3.4%</span> |
-| [hey](https://github.com/rakyll/hey)                     | `hey -z 30s -c 125 http://localhost:8081`                | 22644    | <span style="color:green">134%</span> |
