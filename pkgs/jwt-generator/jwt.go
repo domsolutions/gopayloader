@@ -22,15 +22,16 @@ const (
 )
 
 type Config struct {
-	Ctx        context.Context
-	Kid        string
-	JwtKeyPath string
-	jwtKeyBlob []byte
-	JwtSub     string
-	JwtIss     string
-	JwtAud     string
-	signer     definition.Signer
-	store      *cache
+	Ctx        			context.Context
+	Kid        			string
+	JwtKeyPath 			string
+	jwtKeyBlob 			[]byte
+	JwtSub     			string
+	JwtCustomClaims map[string]string
+	JwtIss     			string
+	JwtAud     			string
+	signer     			definition.Signer
+	store      			*cache
 }
 
 type JWTGenerator struct {
@@ -60,6 +61,7 @@ func (j *JWTGenerator) getFileName(dir string) string {
 	hash.Write([]byte(j.config.JwtAud))
 	hash.Write([]byte(j.config.JwtIss))
 	hash.Write([]byte(j.config.JwtSub))
+	hash.Write([]byte(fmt.Sprint(j.config.JwtCustomClaims)))
 	hash.Write(j.config.jwtKeyBlob)
 	hash.Write([]byte(j.config.Kid))
 	return filepath.Join(dir, "gopayloader-jwtstore-"+hex.EncodeToString(hash.Sum(nil))+".txt")
@@ -182,6 +184,13 @@ func (j *JWTGenerator) commonClaims() jwt.MapClaims {
 	}
 	if j.config.JwtSub != "" {
 		claims["sub"] = j.config.JwtSub
+	}
+	if len(j.config.JwtCustomClaims) > 0 {
+		for key, value := range j.config.JwtCustomClaims {
+			if key != "" {
+				claims[key] = value
+			}
+		}
 	}
 	if j.config.JwtIss != "" {
 		claims["iss"] = j.config.JwtIss
