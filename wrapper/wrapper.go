@@ -16,19 +16,30 @@ import (
 	"github.com/domsolutions/gopayloader/pkgs/payloader"
 )
 
-// Converts jwtCustomClaimsJSON from string to map[string]string
-func JwtCustomClaimsJSONStringToMap(jwtCustomClaimsJSON string) map[string]string {
-	jwtCustomClaimsMap := map[string]string{}
+// Converts jwtCustomClaimsJSON from string to map[string]interface{}
+func JwtCustomClaimsJSONStringToMap(jwtCustomClaimsJSON string) (map[string]interface{}, error) {
+	if jwtCustomClaimsJSON == "" {
+		return nil, nil
+	}
 
-  json.Unmarshal([]byte(jwtCustomClaimsJSON), &jwtCustomClaimsMap)
-  return jwtCustomClaimsMap
+	jwtCustomClaimsMap := map[string]interface{}{}
+
+	err := json.Unmarshal([]byte(jwtCustomClaimsJSON), &jwtCustomClaimsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return jwtCustomClaimsMap, nil
 }
 
 func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtCustomClaimsJSON, jwtIss, jwtAud, jwtHeader string, headers []string, body, bodyFile string, client string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	jwtCustomClaimsMap := JwtCustomClaimsJSONStringToMap(jwtCustomClaimsJSON)
+	jwtCustomClaimsMap, err := JwtCustomClaimsJSONStringToMap(jwtCustomClaimsJSON)
+	if err != nil {
+		return err
+	}
 
 	conf := config.NewConfig(ctx,
 		reqURI,

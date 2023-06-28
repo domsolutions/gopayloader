@@ -27,7 +27,7 @@ type Config struct {
 	JwtKeyPath 			string
 	jwtKeyBlob 			[]byte
 	JwtSub     			string
-	JwtCustomClaims map[string]string
+	JwtCustomClaims map[string]interface{}
 	JwtIss     			string
 	JwtAud     			string
 	signer     			definition.Signer

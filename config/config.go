@@ -29,7 +29,7 @@ type Config struct {
 	JwtKID           string
 	JwtKey           string
 	JwtSub           string
-	JwtCustomClaims  map[string]string
+	JwtCustomClaims  map[string]interface{}
 	JwtIss           string
 	JwtAud           string
 	JwtHeader        string
@@ -40,7 +40,7 @@ type Config struct {
 	Client           string
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub string, jwtCustomClaims map[string]string, jwtIss, jwtAud, jwtHeader string, headers []string, body, bodyFile string, client string) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub string, jwtCustomClaims map[string]interface{}, jwtIss, jwtAud, jwtHeader string, headers []string, body, bodyFile string, client string) *Config {
 	return &Config{
 		Ctx:              ctx,
 		ReqURI:           reqURI,
