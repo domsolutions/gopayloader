@@ -167,7 +167,9 @@ example body;
   "exp": 1714130039,
   "iss": "some-issuer",
   "jti": "05181473-bbd6-4d21-8942-d86c2e972b2b",
-  "sub": "my-subject"
+  "sub": "my-subject",
+  "iat": 1719410063,
+  "browser": "chrome"
 }
 ```
 
@@ -175,7 +177,7 @@ Note `jti` will be different for each jwt.
 
 Will set jwt value = header field `my-jwt` and sign with key `./private-key.pem` and KID `3434645743124`
 
-`./gopayloader run http://localhost:8081 -c 150 -r 1000000 --jwt-header "my-jwt" --jwt-key ./private-key.pem --jwt-kid 3434645743124 --jwt-sub "my-subject" --jwt-aud "some-audience" --jwt-iss "some-issuer"`
+`./gopayloader run http://localhost:8081 -c 150 -r 1000000 --jwt-header "my-jwt" --jwt-key ./private-key.pem --jwt-kid 3434645743124 --jwt-sub "my-subject" --jwt-aud "some-audience" --jwt-iss "some-issuer" --jwt-claims "{\"iat\": 1719410063, \"browser\": \"chrome\"}"`
 
 ```shell
 Gopayloader v0.1.0 HTTP/JWT authentication benchmark tool 
