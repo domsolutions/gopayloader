@@ -101,12 +101,13 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 		pterm.Info.Printf("Sending jwts with requests, checking for jwts in cache\n")
 
 		jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
-			Ctx:        p.config.Ctx,
-			Kid:        p.config.JwtKID,
-			JwtKeyPath: p.config.JwtKey,
-			JwtSub:     p.config.JwtSub,
-			JwtIss:     p.config.JwtIss,
-			JwtAud:     p.config.JwtAud,
+			Ctx:                 p.config.Ctx,
+			Kid:                 p.config.JwtKID,
+			JwtKeyPath:          p.config.JwtKey,
+			JwtSub:              p.config.JwtSub,
+			JwtCustomClaimsJSON: p.config.JwtCustomClaimsJSON,
+			JwtIss:              p.config.JwtIss,
+			JwtAud:              p.config.JwtAud,
 		})
 
 		if err := os.MkdirAll(JwtCacheDir, 0755); err != nil {

@@ -89,6 +89,7 @@ Flags:
       --jwt-key string           JWT signing private key path
       --jwt-kid string           JWT KID
       --jwt-sub string           JWT subject (sub) claim
+      --jwt-claims string        JWT custom claims as a JSON string, ex: {"iat": 1719410063, "browser": "chrome"}
   -m, --method string            request method (default "GET")
       --mtls-cert string         mTLS cert path
       --mtls-key string          mTLS cert private key path

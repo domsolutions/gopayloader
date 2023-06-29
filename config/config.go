@@ -9,62 +9,65 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"encoding/json"
 )
 
 type Config struct {
-	Ctx              context.Context
-	ReqURI           string
-	DisableKeepAlive bool
-	ReqTarget        int64
-	Conns            uint
-	Duration         time.Duration
-	MTLSKey          string
-	MTLSCert         string
-	SkipVerify       bool
-	ReadTimeout      time.Duration
-	WriteTimeout     time.Duration
-	Method           string
-	Verbose          bool
-	VerboseTicker    time.Duration
-	JwtKID           string
-	JwtKey           string
-	JwtSub           string
-	JwtIss           string
-	JwtAud           string
-	JwtHeader        string
-	SendJWT          bool
-	Headers          []string
-	Body             string
-	BodyFile         string
-	Client           string
+	Ctx                  context.Context
+	ReqURI               string
+	DisableKeepAlive     bool
+	ReqTarget            int64
+	Conns                uint
+	Duration             time.Duration
+	MTLSKey              string
+	MTLSCert             string
+	SkipVerify           bool
+	ReadTimeout          time.Duration
+	WriteTimeout         time.Duration
+	Method               string
+	Verbose              bool
+	VerboseTicker        time.Duration
+	JwtKID               string
+	JwtKey               string
+	JwtSub               string
+	JwtCustomClaimsJSON  string
+	JwtIss               string
+	JwtAud               string
+	JwtHeader            string
+	SendJWT              bool
+	Headers              []string
+	Body                 string
+	BodyFile             string
+	Client               string
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, headers []string, body, bodyFile string, client string) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtCustomClaimsJSON, jwtIss, jwtAud, jwtHeader string, headers []string, body, bodyFile string, client string) *Config {
 	return &Config{
-		Ctx:              ctx,
-		ReqURI:           reqURI,
-		MTLSKey:          mTLSKey,
-		MTLSCert:         mTLScert,
-		DisableKeepAlive: disableKeepAlive,
-		ReqTarget:        reqs,
-		Conns:            conns,
-		Duration:         totalTime,
-		SkipVerify:       skipVerify,
-		ReadTimeout:      readTimeout,
-		WriteTimeout:     writeTimeout,
-		Method:           method,
-		Verbose:          verbose,
-		VerboseTicker:    ticker,
-		JwtKID:           jwtKID,
-		JwtKey:           jwtKey,
-		JwtSub:           jwtSub,
-		JwtIss:           jwtIss,
-		JwtAud:           jwtAud,
-		JwtHeader:        jwtHeader,
-		Headers:          headers,
-		Body:             body,
-		BodyFile:         bodyFile,
-		Client:           client,
+		Ctx:                 ctx,
+		ReqURI:              reqURI,
+		MTLSKey:             mTLSKey,
+		MTLSCert:            mTLScert,
+		DisableKeepAlive:    disableKeepAlive,
+		ReqTarget:           reqs,
+		Conns:               conns,
+		Duration:            totalTime,
+		SkipVerify:          skipVerify,
+		ReadTimeout:         readTimeout,
+		WriteTimeout:        writeTimeout,
+		Method:              method,
+		Verbose:             verbose,
+		VerboseTicker:       ticker,
+		JwtKID:              jwtKID,
+		JwtKey:              jwtKey,
+		JwtSub:              jwtSub,
+		JwtCustomClaimsJSON: jwtCustomClaimsJSON,
+		JwtIss:              jwtIss,
+		JwtAud:              jwtAud,
+		JwtHeader:           jwtHeader,
+		Headers:             headers,
+		Body:                body,
+		BodyFile:            bodyFile,
+		Client:              client,
 	}
 }
 
@@ -81,6 +84,22 @@ var allowedMethods = [4]string{
 	"PUT",
 	"POST",
 	"DELETE",
+}
+
+// Converts jwtCustomClaimsJSON from string to map[string]interface{}
+func JwtCustomClaimsJSONStringToMap(jwtCustomClaimsJSON string) (map[string]interface{}, error) {
+	if jwtCustomClaimsJSON == "" {
+		return nil, nil
+	}
+
+	jwtCustomClaimsMap := map[string]interface{}{}
+
+	err := json.Unmarshal([]byte(jwtCustomClaimsJSON), &jwtCustomClaimsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return jwtCustomClaimsMap, nil
 }
 
 func (c *Config) Validate() error {
@@ -180,6 +199,14 @@ func (c *Config) Validate() error {
 	if c.ReqTarget == 0 && c.Duration == 0 {
 		return errors.New("config: ReqTarget 0 and Duration 0")
 	}
+
+	if c.JwtCustomClaimsJSON != "" {
+		_, err := JwtCustomClaimsJSONStringToMap(c.JwtCustomClaimsJSON)
+		if err != nil {
+			return fmt.Errorf("config: failed to parse custom json in --jwt-claims, got error; %v", err)
+		}
+	}
+
 	return nil
 }
 

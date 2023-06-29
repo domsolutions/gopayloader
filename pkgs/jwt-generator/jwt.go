@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	jwt_signer "github.com/domsolutions/gopayloader/pkgs/jwt-signer"
 	"github.com/domsolutions/gopayloader/pkgs/jwt-signer/definition"
+	config "github.com/domsolutions/gopayloader/config"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/pterm/pterm"
@@ -22,15 +24,16 @@ const (
 )
 
 type Config struct {
-	Ctx        context.Context
-	Kid        string
-	JwtKeyPath string
-	jwtKeyBlob []byte
-	JwtSub     string
-	JwtIss     string
-	JwtAud     string
-	signer     definition.Signer
-	store      *cache
+	Ctx        			    context.Context
+	Kid        			    string
+	JwtKeyPath 			    string
+	jwtKeyBlob 			    []byte
+	JwtSub     			    string
+	JwtCustomClaimsJSON string
+	JwtIss     			    string
+	JwtAud     			    string
+	signer     			    definition.Signer
+	store      			    *cache
 }
 
 type JWTGenerator struct {
@@ -60,7 +63,9 @@ func (j *JWTGenerator) getFileName(dir string) string {
 	hash.Write([]byte(j.config.JwtAud))
 	hash.Write([]byte(j.config.JwtIss))
 	hash.Write([]byte(j.config.JwtSub))
-	hash.Write(j.config.jwtKeyBlob)
+	hash.Write([]byte(j.config.JwtCustomClaimsJSON))
+	strippedKey := strings.ReplaceAll(strings.ReplaceAll(string(j.config.jwtKeyBlob), "\r", ""), "\n", "") // Replace \r and \n to have the same value in Windows and Linux
+	hash.Write([]byte(strippedKey))
 	hash.Write([]byte(j.config.Kid))
 	return filepath.Join(dir, "gopayloader-jwtstore-"+hex.EncodeToString(hash.Sum(nil))+".txt")
 }
@@ -163,8 +168,8 @@ func (j *JWTGenerator) generate(limit int64, errs chan<- error, response chan<- 
 	var err error
 	var i int64 = 0
 
+	claims := j.commonClaims() // Claims common to all JWTs, computed only once
 	for i = 0; i < limit; i++ {
-		claims := j.commonClaims()
 		claims["jti"] = uuid.New().String()
 		tokens[i], err = j.config.signer.Generate(claims)
 		if err != nil {
@@ -187,5 +192,18 @@ func (j *JWTGenerator) commonClaims() jwt.MapClaims {
 		claims["iss"] = j.config.JwtIss
 	}
 	claims["exp"] = time.Now().Add(24 * time.Hour * 365).Unix()
+
+	if j.config.JwtCustomClaimsJSON != "" {
+		// At this point the JSON in JwtCustomClaimsJSON has already been validated, but checking for errors again in case the workflow changes in the future
+		jwtCustomClaimsMap, err := config.JwtCustomClaimsJSONStringToMap(j.config.JwtCustomClaimsJSON)
+		if err != nil {
+			return claims // Return claims if there's an error
+		}
+		for key, value := range jwtCustomClaimsMap {
+			if key != "" {
+				claims[key] = value
+			}
+		}
+	}
 	return claims
 }

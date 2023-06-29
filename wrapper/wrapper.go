@@ -15,7 +15,7 @@ import (
 	"github.com/domsolutions/gopayloader/pkgs/payloader"
 )
 
-func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader string, headers []string, body, bodyFile string, client string) error {
+func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtCustomClaimsJSON, jwtIss, jwtAud, jwtHeader string, headers []string, body, bodyFile string, client string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -33,7 +33,7 @@ func RunGoPayLoader(reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, req
 		method,
 		verbose,
 		ticker,
-		jwtKID, jwtKey, jwtSub, jwtIss, jwtAud, jwtHeader, headers, body, bodyFile, client)
+		jwtKID, jwtKey, jwtSub, jwtCustomClaimsJSON, jwtIss, jwtAud, jwtHeader, headers, body, bodyFile, client)
 	if err := conf.Validate(); err != nil {
 		return err
 	}

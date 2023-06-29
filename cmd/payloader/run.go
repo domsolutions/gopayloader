@@ -9,28 +9,29 @@ import (
 )
 
 const (
-	argMethod       = "method"
-	argConnections  = "connections"
-	argRequests     = "requests"
-	argKeepAlive    = "disable-keep-alive"
-	argVerifySigner = "skip-verify"
-	argTime         = "time"
-	argMTLSKey      = "mtls-key"
-	argMTLSCert     = "mtls-cert"
-	argReadTimeout  = "read-timeout"
-	argWriteTimeout = "write-timeout"
-	argVerbose      = "verbose"
-	argTicker       = "ticker"
-	argJWTKey       = "jwt-key"
-	argJWTSUb       = "jwt-sub"
-	argJWTIss       = "jwt-iss"
-	argJWTAud       = "jwt-aud"
-	argJWTHeader    = "jwt-header"
-	argJWTKid       = "jwt-kid"
-	argHeaders      = "headers"
-	argBody         = "body"
-	argBodyFile     = "body-file"
-	argClient       = "client"
+	argMethod       	 = "method"
+	argConnections  	 = "connections"
+	argRequests     	 = "requests"
+	argKeepAlive    	 = "disable-keep-alive"
+	argVerifySigner 	 = "skip-verify"
+	argTime         	 = "time"
+	argMTLSKey      	 = "mtls-key"
+	argMTLSCert     	 = "mtls-cert"
+	argReadTimeout  	 = "read-timeout"
+	argWriteTimeout 	 = "write-timeout"
+	argVerbose      	 = "verbose"
+	argTicker       	 = "ticker"
+	argJWTKey       	 = "jwt-key"
+	argJWTSUb       	 = "jwt-sub"
+	argJWTCustomClaims = "jwt-claims"
+	argJWTIss       	 = "jwt-iss"
+	argJWTAud       	 = "jwt-aud"
+	argJWTHeader    	 = "jwt-header"
+	argJWTKid       	 = "jwt-kid"
+	argHeaders      	 = "headers"
+	argBody         	 = "body"
+	argBodyFile     	 = "body-file"
+	argClient       	 = "client"
 )
 
 var (
@@ -49,6 +50,7 @@ var (
 	ticker           time.Duration
 	jwtKey           string
 	jwtSub           string
+	jwtCustomClaims  string
 	jwtIss           string
 	jwtAud           string
 	jwtHeader        string
@@ -86,6 +88,7 @@ var runCmd = &cobra.Command{
 			jwtKID,
 			jwtKey,
 			jwtSub,
+			jwtCustomClaims,
 			jwtIss,
 			jwtAud,
 			jwtHeader,
@@ -124,6 +127,7 @@ func init() {
 	runCmd.Flags().StringVar(&jwtAud, argJWTAud, "", "JWT audience (aud) claim")
 	runCmd.Flags().StringVar(&jwtIss, argJWTIss, "", "JWT issuer (iss) claim")
 	runCmd.Flags().StringVar(&jwtSub, argJWTSUb, "", "JWT subject (sub) claim")
+	runCmd.Flags().StringVar(&jwtCustomClaims, argJWTCustomClaims, "", "JWT custom claims")
 	runCmd.Flags().StringVar(&jwtHeader, argJWTHeader, "", "JWT header field name")
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)

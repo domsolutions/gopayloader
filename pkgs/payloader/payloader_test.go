@@ -229,7 +229,7 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 				Errors: nil,
 			},
 			check: func(t *testing.T) {
-				f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-672c3f20f01d56f616b14d9c2b213590abea414a1d19c516b1269ceb0232b345.txt"), os.O_RDONLY, os.ModePerm)
+				f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-b7d91ad840dd089d10e2c3bbad56b43f0c558f4ec93a81b05b9f1fa9c8d4ad6a.txt"), os.O_RDONLY, os.ModePerm)
 				if err != nil {
 					if os.IsNotExist(err) {
 						t.Fatal(err)
@@ -241,30 +241,31 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 					t.Fatal(err)
 				}
 				if stat.Size() == 0 {
-					t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-672c3f20f01d56f616b14d9c2b213590abea414a1d19c516b1269ceb0232b345.txt")
+					t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-b7d91ad840dd089d10e2c3bbad56b43f0c558f4ec93a81b05b9f1fa9c8d4ad6a.txt")
 				}
 			},
 		},
 		{
 			name: "GET 101 connections for 210 requests with jwts with all available jwt fields and header",
 			fields: fields{config: &config.Config{
-				Ctx:           context.Background(),
-				ReqURI:        addr,
-				ReqTarget:     210,
-				Conns:         11,
-				ReadTimeout:   5 * time.Second,
-				WriteTimeout:  5 * time.Second,
-				Method:        "GET",
-				Client:        client,
-				VerboseTicker: time.Second,
-				Headers:       []string{"content-type: application/json"},
-				JwtHeader:     "some-jwt",
-				JwtAud:        "some-aud",
-				JwtSub:        "some-subject",
-				JwtIss:        "some-issuer",
-				JwtKID:        "13325575tevdfbdsfsf",
-				JwtKey:        filepath.Join("..", "..", "test", "private-key-jwt.pem"),
-				SkipVerify:    true,
+				Ctx:                 context.Background(),
+				ReqURI:              addr,
+				ReqTarget:           210,
+				Conns:               11,
+				ReadTimeout:         5 * time.Second,
+				WriteTimeout:        5 * time.Second,
+				Method:              "GET",
+				Client:              client,
+				VerboseTicker:       time.Second,
+				Headers:             []string{"content-type: application/json"},
+				JwtHeader:           "some-jwt",
+				JwtAud:              "some-aud",
+				JwtSub:              "some-subject",
+				JwtCustomClaimsJSON: "{\"custom-claim1\": \"abc\", \"custom-claim2\": \"def\"}",
+				JwtIss:        	     "some-issuer",
+				JwtKID:        	     "13325575tevdfbdsfsf",
+				JwtKey:        	     filepath.Join("..", "..", "test", "private-key-jwt.pem"),
+				SkipVerify:    	     true,
 			}},
 			want: &GoPayloaderResults{
 				CompletedReqs: 210,
@@ -275,7 +276,7 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 				Errors: nil,
 			},
 			check: func(t *testing.T) {
-				f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-ee6963c0246fe92609c0a80921c3ffe35e4d487c4b494d38bcdff151efc41ff4.txt"), os.O_RDONLY, os.ModePerm)
+				f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-4f12b598aa74a10a1a94931f0f93ef9f7afb43e138060ed6ce7f5c9906447c1f.txt"), os.O_RDONLY, os.ModePerm)
 				if err != nil {
 					if os.IsNotExist(err) {
 						t.Fatal(err)
@@ -287,30 +288,31 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 					t.Fatal(err)
 				}
 				if stat.Size() == 0 {
-					t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-ee6963c0246fe92609c0a80921c3ffe35e4d487c4b494d38bcdff151efc41ff4.txt")
+					t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-4f12b598aa74a10a1a94931f0f93ef9f7afb43e138060ed6ce7f5c9906447c1f.txt")
 				}
 			},
 		},
 		{
 			name: "GET RSA JWT",
 			fields: fields{config: &config.Config{
-				Ctx:           context.Background(),
-				ReqURI:        addr,
-				ReqTarget:     10,
-				Conns:         1,
-				ReadTimeout:   5 * time.Second,
-				WriteTimeout:  5 * time.Second,
-				Method:        "GET",
-				Client:        client,
-				VerboseTicker: time.Second,
-				Headers:       []string{"content-type: application/json"},
-				JwtHeader:     "some-jwt",
-				JwtAud:        "some-aud",
-				JwtSub:        "some-subject",
-				JwtIss:        "some-issuer",
-				JwtKID:        "13325575tevdfbdsfsf",
-				JwtKey:        filepath.Join("..", "..", "test", "rsa.private"),
-				SkipVerify:    true,
+				Ctx:                 context.Background(),
+				ReqURI:              addr,
+				ReqTarget:           10,
+				Conns:               1,
+				ReadTimeout:         5 * time.Second,
+				WriteTimeout:        5 * time.Second,
+				Method:              "GET",
+				Client:              client,
+				VerboseTicker:       time.Second,
+				Headers:             []string{"content-type: application/json"},
+				JwtHeader:           "some-jwt",
+				JwtAud:              "some-aud",
+				JwtSub:              "some-subject",
+				JwtCustomClaimsJSON: "",
+				JwtIss:              "some-issuer",
+				JwtKID:              "13325575tevdfbdsfsf",
+				JwtKey:              filepath.Join("..", "..", "test", "rsa.private"),
+				SkipVerify:          true,
 			}},
 			want: &GoPayloaderResults{
 				CompletedReqs: 10,
@@ -321,7 +323,7 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 				Errors: nil,
 			},
 			check: func(t *testing.T) {
-				f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-ce2db7adfae3270cb01fd7053b035243213d6e6bbd9ea917ee656eacb94e22e2.txt"), os.O_RDONLY, os.ModePerm)
+				f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-52496875054792ed64a436091bb4734fef6f159c9f4db038e843cbf8c7fa717b.txt"), os.O_RDONLY, os.ModePerm)
 				if err != nil {
 					if os.IsNotExist(err) {
 						t.Fatal(err)
@@ -333,30 +335,31 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 					t.Fatal(err)
 				}
 				if stat.Size() == 0 {
-					t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-ce2db7adfae3270cb01fd7053b035243213d6e6bbd9ea917ee656eacb94e22e2.txt")
+					t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-52496875054792ed64a436091bb4734fef6f159c9f4db038e843cbf8c7fa717b.txt")
 				}
 			},
 		},
 		{
 			name: "Error hostname incorrect format - missing port",
 			fields: fields{config: &config.Config{
-				Ctx:           context.Background(),
-				ReqURI:        "http://localhost/",
-				ReqTarget:     210,
-				Conns:         101,
-				ReadTimeout:   5 * time.Second,
-				WriteTimeout:  5 * time.Second,
-				Method:        "GET",
-				Client:        client,
-				VerboseTicker: time.Second,
-				Headers:       []string{"content-type: application/json"},
-				JwtHeader:     "some-jwt",
-				JwtAud:        "some-aud",
-				JwtSub:        "some-subject",
-				JwtIss:        "some-issuer",
-				JwtKID:        "13325575tevdfbdsfsf",
-				JwtKey:        filepath.Join("..", "..", "test", "private-key-jwt.pem"),
-				SkipVerify:    true,
+				Ctx:                 context.Background(),
+				ReqURI:              "http://localhost/",
+				ReqTarget:           210,
+				Conns:               101,
+				ReadTimeout:         5 * time.Second,
+				WriteTimeout:        5 * time.Second,
+				Method:              "GET",
+				Client:              client,
+				VerboseTicker:       time.Second,
+				Headers:             []string{"content-type: application/json"},
+				JwtHeader:           "some-jwt",
+				JwtAud:              "some-aud",
+				JwtSub:              "some-subject",
+				JwtCustomClaimsJSON: "{\"custom-claim1\": \"abc\", \"custom-claim2\": \"def\"}",
+				JwtIss:              "some-issuer",
+				JwtKID:              "13325575tevdfbdsfsf",
+				JwtKey:              filepath.Join("..", "..", "test", "private-key-jwt.pem"),
+				SkipVerify:          true,
 			}},
 			want: &GoPayloaderResults{
 				CompletedReqs: 0,
