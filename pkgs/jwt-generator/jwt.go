@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	jwt_signer "github.com/domsolutions/gopayloader/pkgs/jwt-signer"
 	"github.com/domsolutions/gopayloader/pkgs/jwt-signer/definition"
 	config "github.com/domsolutions/gopayloader/config"
@@ -63,7 +64,8 @@ func (j *JWTGenerator) getFileName(dir string) string {
 	hash.Write([]byte(j.config.JwtIss))
 	hash.Write([]byte(j.config.JwtSub))
 	hash.Write([]byte(j.config.JwtCustomClaimsJSON))
-	hash.Write(j.config.jwtKeyBlob)
+	strippedKey := strings.ReplaceAll(strings.ReplaceAll(string(j.config.jwtKeyBlob), "\r", ""), "\n", "") // Replace \r and \n to have the same value in Windows and Linux
+	hash.Write([]byte(strippedKey))
 	hash.Write([]byte(j.config.Kid))
 	return filepath.Join(dir, "gopayloader-jwtstore-"+hex.EncodeToString(hash.Sum(nil))+".txt")
 }
