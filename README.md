@@ -19,7 +19,7 @@ tested is JWT authenticated. Each JWT generated will be unique as contains a uni
 }
 ```
 
-A private key is supplied as a flag with optional flags to set other claims i.e. `sub` `aud`, `iss`. It will then check if the required number of jwts has already
+A private key is supplied as a flag with optional flags to set other standard claims i.e. `sub` `aud`, `iss` and can also provide custom claims. It will then check if the required number of jwts has already
 been generated in a previous test by checking a file on disk. All JWTs are saved on disk in cache, this allows
 huge number of jwts to be generated without affecting in-memory use of gopayloader. Once all jwts have been generated
 the tests begin, and jwts are streamed from disk to requests. This keeps the memory footprint low. The other major benefit to pre-generating
@@ -168,7 +168,9 @@ example body;
   "exp": 1714130039,
   "iss": "some-issuer",
   "jti": "05181473-bbd6-4d21-8942-d86c2e972b2b",
-  "sub": "my-subject"
+  "sub": "my-subject",
+  "iat": 1719410063,
+  "browser": "chrome"
 }
 ```
 
@@ -176,7 +178,7 @@ Note `jti` will be different for each jwt.
 
 Will set jwt value = header field `my-jwt` and sign with key `./private-key.pem` and KID `3434645743124`
 
-`./gopayloader run http://localhost:8081 -c 150 -r 1000000 --jwt-header "my-jwt" --jwt-key ./private-key.pem --jwt-kid 3434645743124 --jwt-sub "my-subject" --jwt-aud "some-audience" --jwt-iss "some-issuer"`
+`./gopayloader run http://localhost:8081 -c 150 -r 1000000 --jwt-header "my-jwt" --jwt-key ./private-key.pem --jwt-kid 3434645743124 --jwt-sub "my-subject" --jwt-aud "some-audience" --jwt-iss "some-issuer" --jwt-claims "{\"iat\": 1719410063, \"browser\": \"chrome\"}"`
 
 ```shell
 Gopayloader v0.1.0 HTTP/JWT authentication benchmark tool 
