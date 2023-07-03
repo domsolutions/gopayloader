@@ -135,8 +135,12 @@ func init() {
 	runCmd.Flags().StringVar(&jwtHeader, argJWTHeader, "", "JWT header field name")
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
-	runCmd.MarkFlagsRequiredTogether(argJWTKey, argJWTHeader)
 	runCmd.MarkFlagsMutuallyExclusive(argBody, argBodyFile)
-
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTKid)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTAud)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTIss)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTCustomClaims)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTSUb)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTKey)
 	rootCmd.AddCommand(runCmd)
 }

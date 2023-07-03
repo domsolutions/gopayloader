@@ -62,22 +62,13 @@ func (c *Config) validate() error {
 }
 
 // Gets a certain number of JWTs from a file, looping through / reusing them if necessary
-func GetJWTsFromFile(fpath string, fname string, count int64) (<-chan string, <-chan error) {
+func GetJWTsFromFile(fname string, count int64) (<-chan string, <-chan error) {
 	// Open channels
 	recv := make(chan string, 1000000)
 	errs := make(chan error, 1)
 
 	// Open the file
-	filename := fname
-	if (filename != "") {
-		filename = filepath.Join(fpath, filename)
-	} else {
-		errs <- fmt.Errorf("jwt_generator: retrieving; no filename")
-		close(errs)
-		close(recv)
-		return recv, errs
-	}
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0666)
+	file, err := os.OpenFile(fname, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		errs <- fmt.Errorf("jwt_generator: retrieving; failed to open file containing JWTs")
 		close(errs)
@@ -100,14 +91,24 @@ func GetJWTsFromFile(fpath string, fname string, count int64) (<-chan string, <-
 		// JWT Regex
 		jwtRegex, _ := regexp.Compile(`[\w-]{2,}\.[\w-]{2,}\.[\w-]{2,}`)
 		scanner.Split(bufio.ScanLines)
+		fileContainsAtLeastOneJWT := false
 		for scanner.Scan() {
 			res := jwtRegex.Find(scanner.Bytes())
 			if res != nil {
+				fileContainsAtLeastOneJWT = true
 				recv <- string(res)
 				numJwtsUsedSoFar++
-			} else {
-				errs <- fmt.Errorf("jwt_generator: retrieving; error matching JWT with regex %v", err)
+				// Stop reading file when enough JWTs have been fetched
+				if numJwtsUsedSoFar >= count {
+					break
+				}
 			}
+		}
+		if !fileContainsAtLeastOneJWT {
+			errs <- fmt.Errorf("jwt_generator: retrieving; file doesn't contain a JWT")
+			close(errs)
+			close(recv)
+			return recv, errs
 		}
 		// Loops if user asked for more requests than there were JWTs in the file, so JWTs get reused
 	}

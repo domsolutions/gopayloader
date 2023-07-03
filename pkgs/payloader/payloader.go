@@ -3,6 +3,7 @@ package payloader
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/domsolutions/gopayloader/config"
 	http_clients "github.com/domsolutions/gopayloader/pkgs/http-clients"
 	jwt_generator "github.com/domsolutions/gopayloader/pkgs/jwt-generator"
@@ -101,12 +102,12 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 			return nil, err
 		}
 
-		pterm.Info.Printf("Sending jwts with requests, ")
+		pterm.Info.Printf("Sending jwts with requests\n")
 		if p.config.JwtsFilename != "" {
-			pterm.Info.Printf("using JWTs from file provided\n")
-			jwtStream, jwtStreamErrs = jwt_generator.GetJWTsFromFile(JwtCacheDir, p.config.JwtsFilename, p.config.ReqTarget)
+			pterm.Info.Printf("Using JWTs from file provided\n")
+			jwtStream, jwtStreamErrs = jwt_generator.GetJWTsFromFile(p.config.JwtsFilename, p.config.ReqTarget)
 		} else {
-			pterm.Info.Printf("checking for JWTs in cache\n")
+			pterm.Info.Printf("Checking for JWTs in cache\n")
 
 			jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
 				Ctx:                 p.config.Ctx,
@@ -122,6 +123,15 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 				return nil, err
 			}
 			jwtStream, jwtStreamErrs = jwt.JWTS(p.config.ReqTarget)
+		}
+
+		// Do not continue if there's an error in the JWT error channel
+		select {
+		case err := <-jwtStreamErrs:
+			fmt.Printf("Failed to get jwts from cache, got error; %v \n", err)
+			return nil, err
+		default:
+			break
 		}
 	}
 
