@@ -4,14 +4,10 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"github.com/quic-go/quic-go"
 	httpv3server "github.com/quic-go/quic-go/http3"
-	"github.com/quic-go/quic-go/logging"
-	"github.com/quic-go/quic-go/qlog"
 	"github.com/spf13/cobra"
 	"github.com/valyala/fasthttp"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -126,19 +122,6 @@ var runServerCmd = &cobra.Command{
 
 			quicConf := &quic.Config{
 				EnableDatagrams: true,
-			}
-			if debug {
-				quicConf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
-					filename := fmt.Sprintf("server_%x.qlog", connID)
-					f, err := os.Create(filename)
-					if err != nil {
-						log.Fatal(err)
-					}
-					log.Printf("Creating qlog file %s.\n", filename)
-					return &MyWriteCloser{
-						bufio.NewWriter(f),
-					}
-				})
 			}
 
 			tlsConfigServer := tlsConfig()
