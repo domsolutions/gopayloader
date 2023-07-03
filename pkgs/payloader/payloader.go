@@ -97,26 +97,32 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 			pterm.Error.Println("Can't save jwts if no cache directory")
 			return nil, errors.New("cache directory couldn't be determined")
 		}
-
-		pterm.Info.Printf("Sending jwts with requests, checking for jwts in cache\n")
-
-		jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
-			Ctx:                 p.config.Ctx,
-			Kid:                 p.config.JwtKID,
-			JwtKeyPath:          p.config.JwtKey,
-			JwtSub:              p.config.JwtSub,
-			JwtCustomClaimsJSON: p.config.JwtCustomClaimsJSON,
-			JwtIss:              p.config.JwtIss,
-			JwtAud:              p.config.JwtAud,
-		})
-
 		if err := os.MkdirAll(JwtCacheDir, 0755); err != nil {
 			return nil, err
 		}
-		if err := jwt.Generate(p.config.ReqTarget, JwtCacheDir, false); err != nil {
-			return nil, err
+
+		pterm.Info.Printf("Sending jwts with requests, ")
+		if p.config.JwtsFilename != "" {
+			pterm.Info.Printf("using JWTs from file provided\n")
+			jwtStream, jwtStreamErrs = jwt_generator.GetJWTsFromFile(JwtCacheDir, p.config.JwtsFilename, p.config.ReqTarget)
+		} else {
+			pterm.Info.Printf("checking for JWTs in cache\n")
+
+			jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
+				Ctx:                 p.config.Ctx,
+				Kid:                 p.config.JwtKID,
+				JwtKeyPath:          p.config.JwtKey,
+				JwtSub:              p.config.JwtSub,
+				JwtCustomClaimsJSON: p.config.JwtCustomClaimsJSON,
+				JwtIss:              p.config.JwtIss,
+				JwtAud:              p.config.JwtAud,
+			})
+	
+			if err := jwt.Generate(p.config.ReqTarget, JwtCacheDir, false); err != nil {
+				return nil, err
+			}
+			jwtStream, jwtStreamErrs = jwt.JWTS(p.config.ReqTarget)
 		}
-		jwtStream, jwtStreamErrs = jwt.JWTS(p.config.ReqTarget)
 	}
 
 	reqsPerWorker := p.config.ReqTarget / int64(p.config.Conns)

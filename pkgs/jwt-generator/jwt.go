@@ -17,6 +17,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+	"regexp"
+	"bufio"
 )
 
 const (
@@ -32,6 +34,7 @@ type Config struct {
 	JwtCustomClaimsJSON string
 	JwtIss     			    string
 	JwtAud     			    string
+	JwtsFilename        string
 	signer     			    definition.Signer
 	store      			    *cache
 }
@@ -56,6 +59,64 @@ func (c *Config) validate() error {
 	c.signer = signer
 	c.jwtKeyBlob = jwtKey
 	return nil
+}
+
+// Gets a certain number of JWTs from a file, looping through / reusing them if necessary
+func GetJWTsFromFile(fpath string, fname string, count int64) (<-chan string, <-chan error) {
+	// Open channels
+	recv := make(chan string, 1000000)
+	errs := make(chan error, 1)
+
+	// Open the file
+	filename := fname
+	if (filename != "") {
+		filename = filepath.Join(fpath, filename)
+	} else {
+		errs <- fmt.Errorf("jwt_generator: retrieving; no filename")
+		close(errs)
+		close(recv)
+		return recv, errs
+	}
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		errs <- fmt.Errorf("jwt_generator: retrieving; failed to open file containing JWTs")
+		close(errs)
+		close(recv)
+		return recv, errs
+	}
+
+	numJwtsUsedSoFar := int64(0)
+	for numJwtsUsedSoFar < count {
+		// Set pointer to beginning of file
+		if _, err := file.Seek(0, 0); err != nil {
+			errs <- err
+			close(errs)
+			close(recv)
+			return recv, errs
+		}
+
+		// Parse file lines for JWTs
+		scanner := bufio.NewScanner(file)
+		// JWT Regex
+		jwtRegex, _ := regexp.Compile(`[\w-]{2,}\.[\w-]{2,}\.[\w-]{2,}`)
+		scanner.Split(bufio.ScanLines)
+		for scanner.Scan() {
+			res := jwtRegex.Find(scanner.Bytes())
+			if res != nil {
+				recv <- string(res)
+				numJwtsUsedSoFar++
+			} else {
+				errs <- fmt.Errorf("jwt_generator: retrieving; error matching JWT with regex %v", err)
+			}
+		}
+		// Loops if user asked for more requests than there were JWTs in the file, so JWTs get reused
+	}
+
+	// Close the file
+	if err = file.Close(); err != nil {
+		fmt.Printf("Could not close the file due to this %s error \n", err) 
+	}
+	return recv, errs
 }
 
 func (j *JWTGenerator) getFileName(dir string) string {

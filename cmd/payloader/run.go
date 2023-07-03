@@ -28,6 +28,7 @@ const (
 	argJWTAud       	 = "jwt-aud"
 	argJWTHeader    	 = "jwt-header"
 	argJWTKid       	 = "jwt-kid"
+	argJWTsFilename    = "jwts-filename"
 	argHeaders      	 = "headers"
 	argBody         	 = "body"
 	argBodyFile     	 = "body-file"
@@ -55,6 +56,7 @@ var (
 	jwtAud           string
 	jwtHeader        string
 	jwtKID           string
+	jwtsFilename		 string
 	headers          *[]string
 	body             string
 	bodyFile         string
@@ -92,6 +94,7 @@ var runCmd = &cobra.Command{
 			jwtIss,
 			jwtAud,
 			jwtHeader,
+			jwtsFilename,
 			*headers,
 			body,
 			bodyFile,
@@ -128,6 +131,7 @@ func init() {
 	runCmd.Flags().StringVar(&jwtIss, argJWTIss, "", "JWT issuer (iss) claim")
 	runCmd.Flags().StringVar(&jwtSub, argJWTSUb, "", "JWT subject (sub) claim")
 	runCmd.Flags().StringVar(&jwtCustomClaims, argJWTCustomClaims, "", "JWT custom claims")
+	runCmd.Flags().StringVarP(&jwtsFilename, argJWTsFilename, "f", "", "File name in .cache where the JWTs to use are stored")
 	runCmd.Flags().StringVar(&jwtHeader, argJWTHeader, "", "JWT header field name")
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
