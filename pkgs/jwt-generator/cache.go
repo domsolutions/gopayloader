@@ -20,6 +20,7 @@ func newCache(f *os.File) (*cache, error) {
 	c := cache{f: f}
 
 	c.scanner = bufio.NewScanner(c.f)
+	// Get count found on first line of the file
 	c.scanner.Split(bufio.ScanLines)
 	if c.scanner.Scan() {
 		bb := make([]byte, 8)

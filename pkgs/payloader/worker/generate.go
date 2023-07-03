@@ -94,8 +94,9 @@ func jwtMiddleware(w *WorkerBase) {
 	case <-w.config.Ctx.Done():
 		// user cancelled
 		return
-	//case err := <-w.config.JwtStreamErr:
-	//	pterm.Error.Printf("Failed to get jwts from cache, got error; %v \n", err)
+	case err := <-w.config.JwtStreamErr:
+		// pterm.Error.Printf("Failed to get jwts from cache, got error; %v \n", err)
+		fmt.Printf("Failed to get jwts from cache, got error; %v \n", err)
 	//	return TODO fix
 	case jwt := <-w.config.JwtStreamReceiver:
 		//fmt.Printf("GOT JWT %sHELP \n", jwt)
