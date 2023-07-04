@@ -25,6 +25,9 @@ huge number of jwts to be generated without affecting in-memory use of gopayload
 the tests begin, and jwts are streamed from disk to requests. This keeps the memory footprint low. The other major benefit to pre-generating
 is all of CPU cycles can be dedicated to sending the requests thus achieving higher RPS.
 
+## Contributing
+
+Contributions are welcome, please read the guidelines [here.](./CONTRIBUTING.md)
 
 ## Installation
 
