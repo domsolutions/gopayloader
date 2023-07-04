@@ -109,7 +109,6 @@ func GetNetHTTPClient(config *http_clients.Config) (http_clients.GoPayLoaderClie
 		},
 		Timeout: config.ReadTimeout + config.WriteTimeout,
 	}}, nil
-
 }
 
 func GetNetHTTP3Client(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
