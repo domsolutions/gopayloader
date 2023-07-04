@@ -31,6 +31,10 @@ func (r *Resp) Size() int64 {
 	return size
 }
 
+func (r *Resp) Close() {
+	r.resp.CloseBodyStream()
+}
+
 func (fh *Req) SetHeader(key, val string) {
 	fh.req.Header.Set(key, val)
 }
@@ -53,6 +57,10 @@ func (fh *Req) SetBody(body []byte) {
 
 func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error {
 	return fh.client.Do(req.(*Req).req, resp.(*Resp).resp)
+}
+
+func (c *Client) CloseConns() {
+	c.client.CloseIdleConnections()
 }
 
 func (fh *Client) NewResponse() http_clients.Response {

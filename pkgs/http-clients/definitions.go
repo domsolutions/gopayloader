@@ -15,12 +15,14 @@ type Request interface {
 type Response interface {
 	StatusCode() int
 	Size() int64
+	Close()
 }
 
 type GoPayLoaderClient interface {
 	Do(req Request, resp Response) error
 	NewReq(method, url string) (Request, error)
 	NewResponse() Response
+	CloseConns()
 }
 
 type Config struct {

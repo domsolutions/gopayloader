@@ -25,7 +25,14 @@ func (r *Resp) StatusCode() int {
 	return r.resp.StatusCode
 }
 
+func (r *Resp) Close() {
+	r.resp.Body.Close()
+}
+
 func (r *Resp) Size() int64 {
+	if r.resp == nil {
+		return 0
+	}
 	var size = r.resp.ContentLength
 	for key, header := range r.resp.Header {
 		size += int64(len(key))
@@ -69,6 +76,10 @@ func (c *Client) Do(req http_clients.Request, resp http_clients.Response) error 
 	return err
 }
 
+func (c *Client) CloseConns() {
+	c.client.CloseIdleConnections()
+}
+
 func (c *Client) NewResponse() http_clients.Response {
 	return &Resp{
 		resp: &http.Response{},
@@ -102,10 +113,11 @@ func GetNetHTTPClient(config *http_clients.Config) (http_clients.GoPayLoaderClie
 	return &Client{client: &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
+			MaxConnsPerHost: 1,
+			MaxIdleConns:    1,
 		},
 		Timeout: config.ReadTimeout + config.WriteTimeout,
 	}}, nil
-
 }
 
 func GetNetHTTP3Client(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {

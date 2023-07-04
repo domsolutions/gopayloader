@@ -18,6 +18,11 @@ import (
 	"time"
 )
 
+var (
+	testServerHTTP3 httpv3server.Server
+	testFastHTTP    fasthttp.Server
+)
+
 func init() {
 	go testStartHTTP1Server("localhost:8888")
 	go testStartHTTP2Server("localhost:8889")
@@ -55,7 +60,7 @@ func tlsConfig() *tls.Config {
 
 func testStartHTTP1Server(addr string) {
 	var err error
-	server := fasthttp.Server{
+	testFastHTTP = fasthttp.Server{
 		Handler: func(c *fasthttp.RequestCtx) {
 			_, err = c.WriteString("hello")
 			if err != nil {
@@ -64,14 +69,14 @@ func testStartHTTP1Server(addr string) {
 		},
 	}
 
-	if err := server.ListenAndServe(addr); err != nil {
-		log.Fatal(err)
+	if err := testFastHTTP.ListenAndServe(addr); err != nil {
+		log.Println(err)
 	}
 }
 
 func testStartHTTP3Server(addr string) {
 	var err error
-	server := httpv3server.Server{
+	testServerHTTP3 = httpv3server.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, err = w.Write([]byte("hello"))
 			if err != nil {
@@ -85,8 +90,8 @@ func testStartHTTP3Server(addr string) {
 		TLSConfig: tlsConfig(),
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+	if err := testServerHTTP3.ListenAndServe(); err != nil {
+		log.Println(err)
 	}
 }
 
@@ -107,31 +112,35 @@ func testStartHTTP2Server(addr string) {
 	})
 
 	if err := server.ListenAndServeTLS("", ""); err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }
 
 func TestPayLoader_RunFastHTTP1NonSSL(t *testing.T) {
-	testPayLoader_Run(t, "http://localhost:8888", "fasthttp-1")
+	testPayLoader_Run(t, "http://localhost:8888", "fasthttp-1", func() {
+		testFastHTTP.Shutdown()
+	})
 }
 
 func TestPayLoader_RunFastHTTP1SSL(t *testing.T) {
-	testPayLoader_Run(t, "https://localhost:8889", "fasthttp-1")
+	testPayLoader_Run(t, "https://localhost:8889", "fasthttp-1", nil)
 }
 
 func TestPayLoader_RunNetHTTP1SSL(t *testing.T) {
-	testPayLoader_Run(t, "https://localhost:8889", "nethttp")
+	testPayLoader_Run(t, "https://localhost:8889", "nethttp", nil)
 }
 
 func TestPayLoader_RunFastHTTP2SSL(t *testing.T) {
-	testPayLoader_Run(t, "https://localhost:8889", "fasthttp-2")
+	testPayLoader_Run(t, "https://localhost:8889", "fasthttp-2", nil)
 }
 
 func TestPayLoader_RunNetHTTP3(t *testing.T) {
-	testPayLoader_Run(t, "https://localhost:8890", "nethttp-3")
+	testPayLoader_Run(t, "https://localhost:8890", "nethttp-3", func() {
+		testServerHTTP3.Close()
+	})
 }
 
-func testPayLoader_Run(t *testing.T, addr, client string) {
+func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 	type fields struct {
 		config *config.Config
 	}
@@ -181,13 +190,13 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 			}},
 		},
 		{
-			name: "PUT 10 connections for 1 second long test with 100 requests",
+			name: "PUT 10 connections for 10 second long test with 100 requests",
 			fields: fields{config: &config.Config{
 				Ctx:           context.Background(),
 				ReqURI:        addr,
 				Conns:         10,
 				ReqTarget:     100,
-				Duration:      1 * time.Second,
+				Duration:      10 * time.Second,
 				ReadTimeout:   5 * time.Second,
 				WriteTimeout:  5 * time.Second,
 				Method:        "PUT",
@@ -262,10 +271,10 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 				JwtAud:              "some-aud",
 				JwtSub:              "some-subject",
 				JwtCustomClaimsJSON: "{\"custom-claim1\": \"abc\", \"custom-claim2\": \"def\"}",
-				JwtIss:        	     "some-issuer",
-				JwtKID:        	     "13325575tevdfbdsfsf",
-				JwtKey:        	     filepath.Join("..", "..", "test", "private-key-jwt.pem"),
-				SkipVerify:    	     true,
+				JwtIss:              "some-issuer",
+				JwtKID:              "13325575tevdfbdsfsf",
+				JwtKey:              filepath.Join("..", "..", "test", "private-key-jwt.pem"),
+				SkipVerify:          true,
 			}},
 			want: &GoPayloaderResults{
 				CompletedReqs: 210,
@@ -369,6 +378,11 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 			wantErr: errors.New("url not in correct format http://localhost/ needs to be like protocol://host:port/path i.e. https://localhost:443/some-path"),
 		},
 	}
+
+	if cleanup != nil {
+		t.Cleanup(cleanup)
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewPayLoader(tt.fields.config)
@@ -415,4 +429,5 @@ func testPayLoader_Run(t *testing.T, addr, client string) {
 			}
 		})
 	}
+
 }
