@@ -70,7 +70,7 @@ func testStartHTTP1Server(addr string) {
 	}
 
 	if err := testFastHTTP.ListenAndServe(addr); err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }
 
@@ -91,7 +91,7 @@ func testStartHTTP3Server(addr string) {
 	}
 
 	if err := testServerHTTP3.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }
 
@@ -112,7 +112,7 @@ func testStartHTTP2Server(addr string) {
 	})
 
 	if err := server.ListenAndServeTLS("", ""); err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }
 
@@ -379,6 +379,10 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 		},
 	}
 
+	if cleanup != nil {
+		t.Cleanup(cleanup)
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewPayLoader(tt.fields.config)
@@ -426,7 +430,4 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 		})
 	}
 
-	if cleanup != nil {
-		//t.Cleanup(cleanup)
-	}
 }
