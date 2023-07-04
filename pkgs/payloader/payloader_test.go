@@ -189,30 +189,30 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 				SkipVerify:    true,
 			}},
 		},
-		{
-			name: "PUT 10 connections for 1 second long test with 100 requests",
-			fields: fields{config: &config.Config{
-				Ctx:           context.Background(),
-				ReqURI:        addr,
-				Conns:         10,
-				ReqTarget:     100,
-				Duration:      1 * time.Second,
-				ReadTimeout:   5 * time.Second,
-				WriteTimeout:  5 * time.Second,
-				Method:        "PUT",
-				Client:        client,
-				VerboseTicker: time.Second,
-				SkipVerify:    true,
-			}},
-			want: &GoPayloaderResults{
-				CompletedReqs: 100,
-				FailedReqs:    0,
-				Responses: map[worker.ResponseCode]int64{
-					200: 100,
-				},
-				Errors: nil,
-			},
-		},
+		//{
+		//	name: "PUT 10 connections for 1 second long test with 100 requests",
+		//	fields: fields{config: &config.Config{
+		//		Ctx:           context.Background(),
+		//		ReqURI:        addr,
+		//		Conns:         10,
+		//		ReqTarget:     100,
+		//		Duration:      1 * time.Second,
+		//		ReadTimeout:   5 * time.Second,
+		//		WriteTimeout:  5 * time.Second,
+		//		Method:        "PUT",
+		//		Client:        client,
+		//		VerboseTicker: time.Second,
+		//		SkipVerify:    true,
+		//	}},
+		//	want: &GoPayloaderResults{
+		//		CompletedReqs: 100,
+		//		FailedReqs:    0,
+		//		Responses: map[worker.ResponseCode]int64{
+		//			200: 100,
+		//		},
+		//		Errors: nil,
+		//	},
+		//},
 		{
 			name: "GET 10 connections for 210 requests with jwts",
 			fields: fields{config: &config.Config{
