@@ -58,6 +58,7 @@ func (w *WorkerBase) process() error {
 			w.reqStats <- time.Duration(end - begin)
 		}
 		if w.resp != nil {
+			// this frees up the connection to be used by other requests
 			w.resp.Close()
 		}
 	}()
