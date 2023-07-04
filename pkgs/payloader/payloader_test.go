@@ -190,13 +190,13 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 			}},
 		},
 		{
-			name: "PUT 10 connections for 1 second long test with 100 requests",
+			name: "PUT 10 connections for 10 second long test with 100 requests",
 			fields: fields{config: &config.Config{
 				Ctx:           context.Background(),
 				ReqURI:        addr,
 				Conns:         10,
 				ReqTarget:     100,
-				Duration:      1 * time.Second,
+				Duration:      10 * time.Second,
 				ReadTimeout:   5 * time.Second,
 				WriteTimeout:  5 * time.Second,
 				Method:        "PUT",
