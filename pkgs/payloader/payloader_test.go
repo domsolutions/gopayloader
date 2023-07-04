@@ -380,7 +380,7 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 	}
 
 	if cleanup != nil {
-		t.Cleanup(cleanup)
+		//t.Cleanup(cleanup)
 	}
 
 	for _, tt := range tests {

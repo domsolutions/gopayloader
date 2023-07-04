@@ -12,6 +12,7 @@ type WorkerFixedTimeRequests struct {
 
 func (w *WorkerFixedTimeRequests) Run(wg *sync.WaitGroup) {
 	defer wg.Done()
+	defer w.client.CloseConns()
 
 	w.config.StartTrigger.Wait()
 	deadline, c := context.WithTimeout(context.Background(), w.config.Until)

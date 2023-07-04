@@ -207,6 +207,8 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 	go p.calcReqStats(ctx, reqStats, results)
 
 	workersComplete.Wait()
+	// load test complete, close idle connections
+
 	pterm.Success.Printf("Payload complete, calculating results\n")
 
 	p.stopTimer()

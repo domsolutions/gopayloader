@@ -55,6 +55,10 @@ func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error
 	return fh.client.Do(req.(*Req).req, resp.(*Resp).resp)
 }
 
+func (c *Client) CloseConns() {
+	c.client.CloseIdleConnections()
+}
+
 func (fh *Client) NewResponse() http_clients.Response {
 	return &Resp{resp: &fasthttp.Response{}}
 }

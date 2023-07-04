@@ -10,6 +10,7 @@ type WorkerFixedReqs struct {
 
 func (w *WorkerFixedReqs) Run(wg *sync.WaitGroup) {
 	defer wg.Done()
+	defer w.client.CloseConns()
 
 	var i int64
 	for i = 0; i < w.config.ReqTarget; i++ {

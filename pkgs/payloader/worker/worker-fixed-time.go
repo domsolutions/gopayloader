@@ -11,6 +11,7 @@ type WorkerFixedTime struct {
 
 func (w *WorkerFixedTime) Run(wg *sync.WaitGroup) {
 	defer wg.Done()
+	defer w.client.CloseConns()
 
 	w.config.StartTrigger.Wait()
 	ticker := time.NewTicker(w.config.Until)

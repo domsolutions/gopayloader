@@ -21,6 +21,7 @@ type GoPayLoaderClient interface {
 	Do(req Request, resp Response) error
 	NewReq(method, url string) (Request, error)
 	NewResponse() Response
+	CloseConns()
 }
 
 type Config struct {

@@ -69,6 +69,10 @@ func (c *Client) Do(req http_clients.Request, resp http_clients.Response) error 
 	return err
 }
 
+func (c *Client) CloseConns() {
+	c.client.CloseIdleConnections()
+}
+
 func (c *Client) NewResponse() http_clients.Response {
 	return &Resp{
 		resp: &http.Response{},
