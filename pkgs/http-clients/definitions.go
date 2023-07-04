@@ -15,6 +15,7 @@ type Request interface {
 type Response interface {
 	StatusCode() int
 	Size() int64
+	Close()
 }
 
 type GoPayLoaderClient interface {

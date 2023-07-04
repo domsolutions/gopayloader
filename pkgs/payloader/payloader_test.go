@@ -379,10 +379,6 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 		},
 	}
 
-	if cleanup != nil {
-		//t.Cleanup(cleanup)
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewPayLoader(tt.fields.config)
@@ -428,5 +424,9 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 				tt.check(t)
 			}
 		})
+	}
+
+	if cleanup != nil {
+		//t.Cleanup(cleanup)
 	}
 }

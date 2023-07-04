@@ -31,6 +31,10 @@ func (r *Resp) Size() int64 {
 	return size
 }
 
+func (r *Resp) Close() {
+	//	r.resp.CloseBodyStream()
+}
+
 func (fh *Req) SetHeader(key, val string) {
 	fh.req.Header.Set(key, val)
 }

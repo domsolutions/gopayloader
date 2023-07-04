@@ -28,6 +28,9 @@ func (w *WorkerBase) ReqSize() int64 {
 }
 
 func (w *WorkerBase) RespSize() int64 {
+	if w.resp == nil {
+		return 0
+	}
 	return w.resp.Size()
 }
 
@@ -53,6 +56,9 @@ func (w *WorkerBase) process() error {
 	defer func() {
 		if err == nil {
 			w.reqStats <- time.Duration(end - begin)
+		}
+		if w.resp != nil {
+			w.resp.Close()
 		}
 	}()
 
