@@ -3,6 +3,7 @@ package payloader
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/domsolutions/gopayloader/config"
 	http_clients "github.com/domsolutions/gopayloader/pkgs/http-clients"
 	jwt_generator "github.com/domsolutions/gopayloader/pkgs/jwt-generator"
@@ -97,26 +98,41 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 			pterm.Error.Println("Can't save jwts if no cache directory")
 			return nil, errors.New("cache directory couldn't be determined")
 		}
-
-		pterm.Info.Printf("Sending jwts with requests, checking for jwts in cache\n")
-
-		jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
-			Ctx:                 p.config.Ctx,
-			Kid:                 p.config.JwtKID,
-			JwtKeyPath:          p.config.JwtKey,
-			JwtSub:              p.config.JwtSub,
-			JwtCustomClaimsJSON: p.config.JwtCustomClaimsJSON,
-			JwtIss:              p.config.JwtIss,
-			JwtAud:              p.config.JwtAud,
-		})
-
 		if err := os.MkdirAll(JwtCacheDir, 0755); err != nil {
 			return nil, err
 		}
-		if err := jwt.Generate(p.config.ReqTarget, JwtCacheDir, false); err != nil {
-			return nil, err
+
+		pterm.Info.Printf("Sending jwts with requests\n")
+		if p.config.JwtsFilename != "" {
+			pterm.Info.Printf("Using JWTs from %s\n", p.config.JwtsFilename)
+			jwtStream, jwtStreamErrs = jwt_generator.GetUserSuppliedJWTs(p.config.JwtsFilename, p.config.ReqTarget)
+		} else {
+			pterm.Info.Printf("Checking for JWTs in cache\n")
+
+			jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
+				Ctx:                 p.config.Ctx,
+				Kid:                 p.config.JwtKID,
+				JwtKeyPath:          p.config.JwtKey,
+				JwtSub:              p.config.JwtSub,
+				JwtCustomClaimsJSON: p.config.JwtCustomClaimsJSON,
+				JwtIss:              p.config.JwtIss,
+				JwtAud:              p.config.JwtAud,
+			})
+	
+			if err := jwt.Generate(p.config.ReqTarget, JwtCacheDir, false); err != nil {
+				return nil, err
+			}
+			jwtStream, jwtStreamErrs = jwt.JWTS(p.config.ReqTarget)
 		}
-		jwtStream, jwtStreamErrs = jwt.JWTS(p.config.ReqTarget)
+
+		// Do not continue if there's an error in the JWT error channel
+		select {
+		case err := <-jwtStreamErrs:
+			fmt.Printf("Failed to get jwts from cache, got error; %v \n", err)
+			return nil, err
+		default:
+			break
+		}
 	}
 
 	reqsPerWorker := p.config.ReqTarget / int64(p.config.Conns)

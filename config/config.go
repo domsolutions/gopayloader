@@ -34,6 +34,7 @@ type Config struct {
 	JwtIss               string
 	JwtAud               string
 	JwtHeader            string
+	JwtsFilename         string
 	SendJWT              bool
 	Headers              []string
 	Body                 string
@@ -41,7 +42,7 @@ type Config struct {
 	Client               string
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtCustomClaimsJSON, jwtIss, jwtAud, jwtHeader string, headers []string, body, bodyFile string, client string) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtCustomClaimsJSON, jwtIss, jwtAud, jwtHeader, jwtsFilename string, headers []string, body, bodyFile string, client string) *Config {
 	return &Config{
 		Ctx:                 ctx,
 		ReqURI:              reqURI,
@@ -64,6 +65,7 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		JwtIss:              jwtIss,
 		JwtAud:              jwtAud,
 		JwtHeader:           jwtHeader,
+		JwtsFilename:        jwtsFilename,
 		Headers:             headers,
 		Body:                body,
 		BodyFile:            bodyFile,
@@ -139,14 +141,14 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if (c.JwtHeader == "") != (c.JwtKey == "") {
-		if c.JwtHeader == "" {
-			return errors.New("config: empty jwt header")
-		}
+	// Require JwtHeader if JwtKey or JwtsFilename is present
+  if (c.JwtsFilename != "" || c.JwtKey != "") && c.JwtHeader == "" {
+		return errors.New("config: empty jwt header")
+	}
 
-		if c.JwtKey == "" {
-			return errors.New("empty jwt key")
-		}
+	// Require JwtKey or JwtsFilename if JwtHeader is present
+	if c.JwtHeader != "" && c.JwtsFilename == "" && c.JwtKey == "" {
+		return errors.New("config: empty jwt filename and jwt key, one of those is needed to send requests with JWTs")
 	}
 
 	if c.JwtKey != "" {
@@ -156,6 +158,20 @@ func (c *Config) Validate() error {
 				return errors.New("config: jwt key does not exist")
 			}
 			return fmt.Errorf("config: jwt key error checking file exists; %v", err)
+		}
+		if c.ReqTarget == 0 {
+			return errors.New("can only send jwts when request number is specified")
+		}
+		c.SendJWT = true
+	}
+
+	if c.JwtsFilename != "" {
+		_, err := os.OpenFile(c.JwtsFilename, os.O_RDONLY, os.ModePerm)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return errors.New("config: jwt file does not exist: " + c.JwtsFilename)
+			}
+			return fmt.Errorf("config: jwt file error checking file exists; %v", err)
 		}
 		if c.ReqTarget == 0 {
 			return errors.New("can only send jwts when request number is specified")
