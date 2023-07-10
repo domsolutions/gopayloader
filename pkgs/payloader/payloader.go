@@ -104,8 +104,8 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 
 		pterm.Info.Printf("Sending jwts with requests\n")
 		if p.config.JwtsFilename != "" {
-			pterm.Info.Printf("Using JWTs from file provided\n")
-			jwtStream, jwtStreamErrs = jwt_generator.GetJWTsFromFile(p.config.JwtsFilename, p.config.ReqTarget)
+			pterm.Info.Printf("Using JWTs from %s\n", p.config.JwtsFilename)
+			jwtStream, jwtStreamErrs = jwt_generator.GetUserSuppliedJWTs(p.config.JwtsFilename, p.config.ReqTarget)
 		} else {
 			pterm.Info.Printf("Checking for JWTs in cache\n")
 

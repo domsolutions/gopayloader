@@ -17,7 +17,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
-	"regexp"
 	"bufio"
 )
 
@@ -26,17 +25,17 @@ const (
 )
 
 type Config struct {
-	Ctx        			    context.Context
-	Kid        			    string
-	JwtKeyPath 			    string
-	jwtKeyBlob 			    []byte
-	JwtSub     			    string
+	Ctx                 context.Context
+	Kid                 string
+	JwtKeyPath          string
+	jwtKeyBlob          []byte
+	JwtSub              string
 	JwtCustomClaimsJSON string
-	JwtIss     			    string
-	JwtAud     			    string
+	JwtIss              string
+	JwtAud              string
 	JwtsFilename        string
-	signer     			    definition.Signer
-	store      			    *cache
+	signer              definition.Signer
+	store               *cache
 }
 
 type JWTGenerator struct {
@@ -62,7 +61,7 @@ func (c *Config) validate() error {
 }
 
 // Gets a certain number of JWTs from a file, looping through / reusing them if necessary
-func GetJWTsFromFile(fname string, count int64) (<-chan string, <-chan error) {
+func GetUserSuppliedJWTs(fname string, count int64) (<-chan string, <-chan error) {
 	// Open channels
 	recv := make(chan string, 1000000)
 	errs := make(chan error, 1)
@@ -86,25 +85,24 @@ func GetJWTsFromFile(fname string, count int64) (<-chan string, <-chan error) {
 			return recv, errs
 		}
 
-		// Parse file lines for JWTs
+		// Read file lines
 		scanner := bufio.NewScanner(file)
-		// JWT Regex
-		jwtRegex, _ := regexp.Compile(`[\w-]{2,}\.[\w-]{2,}\.[\w-]{2,}`)
 		scanner.Split(bufio.ScanLines)
 		fileContainsAtLeastOneJWT := false
 		for scanner.Scan() {
-			res := jwtRegex.Find(scanner.Bytes())
-			if res != nil {
-				fileContainsAtLeastOneJWT = true
-				recv <- string(res)
-				numJwtsUsedSoFar++
-				// Stop reading file when enough JWTs have been fetched
-				if numJwtsUsedSoFar >= count {
-					break
-				}
+			fileContainsAtLeastOneJWT = true
+			recv <- string(scanner.Bytes())
+			numJwtsUsedSoFar++
+			// Stop reading file when enough JWTs have been fetched
+			if numJwtsUsedSoFar >= count {
+				break
 			}
 		}
 		if !fileContainsAtLeastOneJWT {
+			// Close the file
+			if err = file.Close(); err != nil {
+				fmt.Printf("Could not close the file due to this %s error \n", err) 
+			}
 			errs <- fmt.Errorf("jwt_generator: retrieving; file doesn't contain a JWT")
 			close(errs)
 			close(recv)

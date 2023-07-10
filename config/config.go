@@ -169,7 +169,7 @@ func (c *Config) Validate() error {
 		_, err := os.OpenFile(c.JwtsFilename, os.O_RDONLY, os.ModePerm)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return errors.New("config: jwt file does not exist")
+				return errors.New("config: jwt file does not exist: " + c.JwtsFilename)
 			}
 			return fmt.Errorf("config: jwt file error checking file exists; %v", err)
 		}

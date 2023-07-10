@@ -9,30 +9,30 @@ import (
 )
 
 const (
-	argMethod       	 = "method"
-	argConnections  	 = "connections"
-	argRequests     	 = "requests"
-	argKeepAlive    	 = "disable-keep-alive"
-	argVerifySigner 	 = "skip-verify"
-	argTime         	 = "time"
-	argMTLSKey      	 = "mtls-key"
-	argMTLSCert     	 = "mtls-cert"
-	argReadTimeout  	 = "read-timeout"
-	argWriteTimeout 	 = "write-timeout"
-	argVerbose      	 = "verbose"
-	argTicker       	 = "ticker"
-	argJWTKey       	 = "jwt-key"
-	argJWTSUb       	 = "jwt-sub"
+	argMethod          = "method"
+	argConnections     = "connections"
+	argRequests        = "requests"
+	argKeepAlive       = "disable-keep-alive"
+	argVerifySigner    = "skip-verify"
+	argTime            = "time"
+	argMTLSKey         = "mtls-key"
+	argMTLSCert        = "mtls-cert"
+	argReadTimeout     = "read-timeout"
+	argWriteTimeout    = "write-timeout"
+	argVerbose         = "verbose"
+	argTicker          = "ticker"
+	argJWTKey          = "jwt-key"
+	argJWTSUb          = "jwt-sub"
 	argJWTCustomClaims = "jwt-claims"
-	argJWTIss       	 = "jwt-iss"
-	argJWTAud       	 = "jwt-aud"
-	argJWTHeader    	 = "jwt-header"
-	argJWTKid       	 = "jwt-kid"
+	argJWTIss          = "jwt-iss"
+	argJWTAud          = "jwt-aud"
+	argJWTHeader       = "jwt-header"
+	argJWTKid          = "jwt-kid"
 	argJWTsFilename    = "jwts-filename"
-	argHeaders      	 = "headers"
-	argBody         	 = "body"
-	argBodyFile     	 = "body-file"
-	argClient       	 = "client"
+	argHeaders         = "headers"
+	argBody            = "body"
+	argBodyFile        = "body-file"
+	argClient          = "client"
 )
 
 var (
@@ -56,7 +56,7 @@ var (
 	jwtAud           string
 	jwtHeader        string
 	jwtKID           string
-	jwtsFilename		 string
+	jwtsFilename     string
 	headers          *[]string
 	body             string
 	bodyFile         string
