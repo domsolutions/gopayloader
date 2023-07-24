@@ -1,6 +1,6 @@
 module github.com/domsolutions/gopayloader
 
-go 1.19
+go 1.20
 
 require (
 	github.com/dgrr/http2 v0.3.5
