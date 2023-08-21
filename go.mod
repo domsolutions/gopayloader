@@ -1,21 +1,21 @@
 module github.com/domsolutions/gopayloader
 
-go 1.19
+go 1.20
 
 require (
 	github.com/dgrr/http2 v0.3.5
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/pterm/pterm v0.12.62
-	github.com/quic-go/quic-go v0.36.1
+	github.com/pterm/pterm v0.12.65
+	github.com/quic-go/quic-go v0.37.4
 	github.com/spf13/cobra v1.7.0
 	github.com/valyala/fasthttp v1.48.0
-	golang.org/x/text v0.10.0
+	golang.org/x/text v0.12.0
 )
 
 require (
-	atomicgo.dev/cursor v0.1.2 // indirect
+	atomicgo.dev/cursor v0.2.0 // indirect
 	atomicgo.dev/keyboard v0.2.9 // indirect
 	atomicgo.dev/schedule v0.0.2 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
@@ -27,11 +27,10 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.16.6 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
-	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/onsi/ginkgo/v2 v2.11.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
-	github.com/quic-go/qtls-go1-19 v0.3.2 // indirect
-	github.com/quic-go/qtls-go1-20 v0.2.2 // indirect
+	github.com/quic-go/qtls-go1-20 v0.3.1 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -41,7 +40,7 @@ require (
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/net v0.11.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
-	golang.org/x/term v0.9.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/term v0.10.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 )
