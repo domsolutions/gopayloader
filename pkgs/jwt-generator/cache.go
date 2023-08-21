@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/pterm/pterm"
 	"os"
 	"strconv"
 	"strings"
@@ -31,9 +32,9 @@ func newCache(f *os.File) (*cache, error) {
 			return nil, err
 		}
 
-		s := string(bb)
-		count, err := strconv.ParseInt(s, 10, 64)
+		count, err := getCount(bb)
 		if err != nil {
+			pterm.Error.Printf("Got error reading jwt count from cache; %v", err)
 			return nil, err
 		}
 
@@ -45,6 +46,23 @@ func newCache(f *os.File) (*cache, error) {
 
 func (c *cache) getJwtCount() int64 {
 	return c.count
+}
+
+func getCount(bb []byte) (int64, error) {
+	num := make([]byte, 0)
+	for _, m := range bb {
+		if m == 0 {
+			break
+		}
+		num = append(num, m)
+	}
+
+	s := string(num)
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return i, nil
 }
 
 func (c *cache) get(count int64) (<-chan string, <-chan error) {
@@ -78,16 +96,7 @@ func (c *cache) get(count int64) (<-chan string, <-chan error) {
 		return recv, errs
 	}
 
-	num := make([]byte, 0)
-	for _, m := range meta {
-		if m == 0 {
-			break
-		}
-		num = append(num, m)
-	}
-
-	s := string(num)
-	i, err := strconv.ParseInt(s, 10, 64)
+	i, err := getCount(meta)
 	if err != nil {
 		errs <- fmt.Errorf("failed to get jwt count; %v", err)
 		close(errs)
