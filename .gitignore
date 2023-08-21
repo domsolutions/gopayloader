@@ -9,3 +9,4 @@ gopayloader-darwin-amd64
 gopayloader-linux-amd64
 gopayloader-windows-amd64.exe
 *.tar.gz
+build
