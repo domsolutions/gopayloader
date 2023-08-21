@@ -131,7 +131,7 @@ func init() {
 	runCmd.Flags().StringVar(&jwtIss, argJWTIss, "", "JWT issuer (iss) claim")
 	runCmd.Flags().StringVar(&jwtSub, argJWTSUb, "", "JWT subject (sub) claim")
 	runCmd.Flags().StringVar(&jwtCustomClaims, argJWTCustomClaims, "", "JWT custom claims")
-	runCmd.Flags().StringVarP(&jwtsFilename, argJWTsFilename, "f", "", "File name in .cache where the JWTs to use are stored")
+	runCmd.Flags().StringVarP(&jwtsFilename, argJWTsFilename, "f", "", "File path for pre-generated JWTs, separated by new lines")
 	runCmd.Flags().StringVar(&jwtHeader, argJWTHeader, "", "JWT header field name")
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
