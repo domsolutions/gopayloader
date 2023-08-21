@@ -89,7 +89,7 @@ func (p *PayLoader) startWorkers(wg *sync.WaitGroup) {
 }
 
 func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
-	var jwtStreamErrs <-chan error
+	var jwtErr <-chan error
 	var jwtStream <-chan string
 
 	if p.config.SendJWT && p.config.ReqTarget != 0 {
@@ -97,26 +97,31 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 			pterm.Error.Println("Can't save jwts if no cache directory")
 			return nil, errors.New("cache directory couldn't be determined")
 		}
-
-		pterm.Info.Printf("Sending jwts with requests, checking for jwts in cache\n")
-
-		jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
-			Ctx:                 p.config.Ctx,
-			Kid:                 p.config.JwtKID,
-			JwtKeyPath:          p.config.JwtKey,
-			JwtSub:              p.config.JwtSub,
-			JwtCustomClaimsJSON: p.config.JwtCustomClaimsJSON,
-			JwtIss:              p.config.JwtIss,
-			JwtAud:              p.config.JwtAud,
-		})
-
 		if err := os.MkdirAll(JwtCacheDir, 0755); err != nil {
 			return nil, err
 		}
-		if err := jwt.Generate(p.config.ReqTarget, JwtCacheDir, false); err != nil {
-			return nil, err
+
+		pterm.Info.Printf("Sending jwts with requests\n")
+		if p.config.JwtsFilename != "" {
+			pterm.Info.Printf("Using JWTs from %s \n", p.config.JwtsFilename)
+			jwtStream, jwtErr = jwt_generator.GetUserSuppliedJWTs(p.config.JwtsFilename, p.config.ReqTarget)
+		} else {
+			pterm.Info.Printf("Checking for JWTs in cache\n")
+			jwt := jwt_generator.NewJWTGenerator(&jwt_generator.Config{
+				Ctx:                 p.config.Ctx,
+				Kid:                 p.config.JwtKID,
+				JwtKeyPath:          p.config.JwtKey,
+				JwtSub:              p.config.JwtSub,
+				JwtCustomClaimsJSON: p.config.JwtCustomClaimsJSON,
+				JwtIss:              p.config.JwtIss,
+				JwtAud:              p.config.JwtAud,
+			})
+
+			if err := jwt.Generate(p.config.ReqTarget, JwtCacheDir, false); err != nil {
+				return nil, err
+			}
+			jwtStream, jwtErr = jwt.JWTS(p.config.ReqTarget)
 		}
-		jwtStream, jwtStreamErrs = jwt.JWTS(p.config.ReqTarget)
 	}
 
 	reqsPerWorker := p.config.ReqTarget / int64(p.config.Conns)
@@ -181,7 +186,6 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 
 		if p.config.SendJWT {
 			c.JwtStreamReceiver = jwtStream
-			c.JwtStreamErr = jwtStreamErrs
 			c.JWTHeader = p.config.JwtHeader
 		}
 
@@ -205,6 +209,14 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 
 	results := &GoPayloaderResults{}
 	go p.calcReqStats(ctx, reqStats, results)
+
+	if jwtErr != nil {
+		err, _ := <-jwtErr
+		if err != nil {
+			pterm.Error.Printf("Failed to retrieve JWTs; %v \n", err)
+			return nil, err
+		}
+	}
 
 	workersComplete.Wait()
 	pterm.Success.Printf("Payload complete, calculating results\n")

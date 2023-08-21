@@ -9,29 +9,30 @@ import (
 )
 
 const (
-	argMethod       	 = "method"
-	argConnections  	 = "connections"
-	argRequests     	 = "requests"
-	argKeepAlive    	 = "disable-keep-alive"
-	argVerifySigner 	 = "skip-verify"
-	argTime         	 = "time"
-	argMTLSKey      	 = "mtls-key"
-	argMTLSCert     	 = "mtls-cert"
-	argReadTimeout  	 = "read-timeout"
-	argWriteTimeout 	 = "write-timeout"
-	argVerbose      	 = "verbose"
-	argTicker       	 = "ticker"
-	argJWTKey       	 = "jwt-key"
-	argJWTSUb       	 = "jwt-sub"
+	argMethod          = "method"
+	argConnections     = "connections"
+	argRequests        = "requests"
+	argKeepAlive       = "disable-keep-alive"
+	argVerifySigner    = "skip-verify"
+	argTime            = "time"
+	argMTLSKey         = "mtls-key"
+	argMTLSCert        = "mtls-cert"
+	argReadTimeout     = "read-timeout"
+	argWriteTimeout    = "write-timeout"
+	argVerbose         = "verbose"
+	argTicker          = "ticker"
+	argJWTKey          = "jwt-key"
+	argJWTSUb          = "jwt-sub"
 	argJWTCustomClaims = "jwt-claims"
-	argJWTIss       	 = "jwt-iss"
-	argJWTAud       	 = "jwt-aud"
-	argJWTHeader    	 = "jwt-header"
-	argJWTKid       	 = "jwt-kid"
-	argHeaders      	 = "headers"
-	argBody         	 = "body"
-	argBodyFile     	 = "body-file"
-	argClient       	 = "client"
+	argJWTIss          = "jwt-iss"
+	argJWTAud          = "jwt-aud"
+	argJWTHeader       = "jwt-header"
+	argJWTKid          = "jwt-kid"
+	argJWTsFilename    = "jwts-filename"
+	argHeaders         = "headers"
+	argBody            = "body"
+	argBodyFile        = "body-file"
+	argClient          = "client"
 )
 
 var (
@@ -55,6 +56,7 @@ var (
 	jwtAud           string
 	jwtHeader        string
 	jwtKID           string
+	jwtsFilename     string
 	headers          *[]string
 	body             string
 	bodyFile         string
@@ -92,6 +94,7 @@ var runCmd = &cobra.Command{
 			jwtIss,
 			jwtAud,
 			jwtHeader,
+			jwtsFilename,
 			*headers,
 			body,
 			bodyFile,
@@ -128,11 +131,16 @@ func init() {
 	runCmd.Flags().StringVar(&jwtIss, argJWTIss, "", "JWT issuer (iss) claim")
 	runCmd.Flags().StringVar(&jwtSub, argJWTSUb, "", "JWT subject (sub) claim")
 	runCmd.Flags().StringVar(&jwtCustomClaims, argJWTCustomClaims, "", "JWT custom claims")
+	runCmd.Flags().StringVarP(&jwtsFilename, argJWTsFilename, "f", "", "File path for pre-generated JWTs, separated by new lines")
 	runCmd.Flags().StringVar(&jwtHeader, argJWTHeader, "", "JWT header field name")
 
 	runCmd.MarkFlagsRequiredTogether(argMTLSCert, argMTLSKey)
-	runCmd.MarkFlagsRequiredTogether(argJWTKey, argJWTHeader)
 	runCmd.MarkFlagsMutuallyExclusive(argBody, argBodyFile)
-
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTKid)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTAud)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTIss)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTCustomClaims)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTSUb)
+	runCmd.MarkFlagsMutuallyExclusive(argJWTsFilename, argJWTKey)
 	rootCmd.AddCommand(runCmd)
 }

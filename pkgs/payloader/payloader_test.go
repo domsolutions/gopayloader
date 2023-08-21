@@ -349,6 +349,32 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 			},
 		},
 		{
+			name: "GET using JWT file only",
+			fields: fields{config: &config.Config{
+				Ctx:           context.Background(),
+				ReqURI:        addr,
+				ReqTarget:     10,
+				Conns:         1,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "GET",
+				Client:        client,
+				VerboseTicker: time.Second,
+				Headers:       []string{"content-type: application/json"},
+				JwtHeader:     "Authorization",
+				JwtsFilename:  filepath.Join("..", "..", "test", "jwtstestfile.txt"),
+				SkipVerify:    true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 10,
+				FailedReqs:    0,
+				Responses: map[worker.ResponseCode]int64{
+					200: 10,
+				},
+				Errors: nil,
+			},
+		},
+		{
 			name: "Error hostname incorrect format - missing port",
 			fields: fields{config: &config.Config{
 				Ctx:                 context.Background(),

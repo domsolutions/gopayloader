@@ -11,9 +11,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -87,9 +89,25 @@ var runServerCmd = &cobra.Command{
 				},
 			}
 
-			if err := server.ListenAndServe(addr); err != nil {
-				return err
+			errs := make(chan error)
+			go func() {
+				if err := server.ListenAndServe(addr); err != nil {
+					log.Println(err)
+					errs <- err
+				}
+			}()
+
+			c := make(chan os.Signal, 1)
+			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+			select {
+			case <-c:
+				log.Println("User cancelled, shutting down")
+				server.Shutdown()
+			case err := <-errs:
+				log.Printf("Got error from server; %v \n", err)
 			}
+
 			return nil
 		}
 

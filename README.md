@@ -87,12 +87,13 @@ Flags:
   -H, --headers strings          headers to send in request, can have multiple i.e -H 'content-type:application/json' -H' connection:close'
   -h, --help                     help for run
       --jwt-aud string           JWT audience (aud) claim
+      --jwt-claims string        JWT custom claims
       --jwt-header string        JWT header field name
       --jwt-iss string           JWT issuer (iss) claim
       --jwt-key string           JWT signing private key path
       --jwt-kid string           JWT KID
       --jwt-sub string           JWT subject (sub) claim
-      --jwt-claims string        JWT custom claims as a JSON string, ex: {"iat": 1719410063, "browser": "chrome"}
+  -f, --jwts-filename string     File path for pre-generated JWTs, separated by new lines
   -m, --method string            request method (default "GET")
       --mtls-cert string         mTLS cert path
       --mtls-key string          mTLS cert private key path
@@ -220,6 +221,13 @@ https://github.com/domsolutions/gopayloader
 | Response code; 200    | 1000000                       |
 +-----------------------+-------------------------------+
 ```
+
+If you have your own JWTs you want to test, you can supply a file to send the JWTs i.e. `./my-jwts.txt` where each jwt is separated by a new line.
+
+```shell
+./gopayloader run http://localhost:8081 -c 1 -r 1000000 --jwt-header "my-jwt" -f ./my-jwts.txt
+```
+
 
 To remove all generated jwts;
 
