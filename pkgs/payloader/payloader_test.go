@@ -3,6 +3,7 @@ package payloader
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"github.com/domsolutions/gopayloader/config"
 	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"github.com/quic-go/quic-go"
@@ -150,156 +151,156 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 		wantErr error
 		check   func(t *testing.T)
 	}{
-		//{
-		//	name: "GET 10 connections for 210 requests",
-		//	fields: fields{config: &config.Config{
-		//		Ctx:           context.Background(),
-		//		ReqURI:        addr,
-		//		ReqTarget:     210,
-		//		Conns:         10,
-		//		ReadTimeout:   5 * time.Second,
-		//		WriteTimeout:  5 * time.Second,
-		//		Method:        "GET",
-		//		Client:        client,
-		//		VerboseTicker: time.Second,
-		//		SkipVerify:    true,
-		//	}},
-		//	want: &GoPayloaderResults{
-		//		CompletedReqs: 210,
-		//		FailedReqs:    0,
-		//		Responses: map[worker.ResponseCode]int64{
-		//			200: 210,
-		//		},
-		//		Errors: nil,
-		//	},
-		//},
-		//{
-		//	name: "POST 10 connections for 2 second long test",
-		//	fields: fields{config: &config.Config{
-		//		Ctx:           context.Background(),
-		//		ReqURI:        addr,
-		//		Conns:         10,
-		//		Duration:      2 * time.Second,
-		//		ReadTimeout:   5 * time.Second,
-		//		WriteTimeout:  5 * time.Second,
-		//		Method:        "POST",
-		//		Client:        client,
-		//		VerboseTicker: time.Second,
-		//		SkipVerify:    true,
-		//	}},
-		//},
-		//{
-		//	name: "PUT 10 connections for 10 second long test with 100 requests",
-		//	fields: fields{config: &config.Config{
-		//		Ctx:           context.Background(),
-		//		ReqURI:        addr,
-		//		Conns:         10,
-		//		ReqTarget:     100,
-		//		Duration:      10 * time.Second,
-		//		ReadTimeout:   5 * time.Second,
-		//		WriteTimeout:  5 * time.Second,
-		//		Method:        "PUT",
-		//		Client:        client,
-		//		VerboseTicker: time.Second,
-		//		SkipVerify:    true,
-		//	}},
-		//	want: &GoPayloaderResults{
-		//		CompletedReqs: 100,
-		//		FailedReqs:    0,
-		//		Responses: map[worker.ResponseCode]int64{
-		//			200: 100,
-		//		},
-		//		Errors: nil,
-		//	},
-		//},
-		//{
-		//	name: "GET 10 connections for 210 requests with jwts",
-		//	fields: fields{config: &config.Config{
-		//		Ctx:           context.Background(),
-		//		ReqURI:        addr,
-		//		ReqTarget:     210,
-		//		Conns:         10,
-		//		ReadTimeout:   5 * time.Second,
-		//		WriteTimeout:  5 * time.Second,
-		//		Method:        "GET",
-		//		Client:        client,
-		//		VerboseTicker: time.Second,
-		//		JwtHeader:     "some-jwt",
-		//		JwtKey:        filepath.Join("..", "..", "test", "private-key-jwt.pem"),
-		//		SkipVerify:    true,
-		//	}},
-		//	want: &GoPayloaderResults{
-		//		CompletedReqs: 210,
-		//		FailedReqs:    0,
-		//		Responses: map[worker.ResponseCode]int64{
-		//			200: 210,
-		//		},
-		//		Errors: nil,
-		//	},
-		//	check: func(t *testing.T) {
-		//		f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-b7d91ad840dd089d10e2c3bbad56b43f0c558f4ec93a81b05b9f1fa9c8d4ad6a.txt"), os.O_RDONLY, os.ModePerm)
-		//		if err != nil {
-		//			if os.IsNotExist(err) {
-		//				t.Fatal(err)
-		//			}
-		//			t.Fatal(err)
-		//		}
-		//		stat, err := f.Stat()
-		//		if err != nil {
-		//			t.Fatal(err)
-		//		}
-		//		if stat.Size() == 0 {
-		//			t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-b7d91ad840dd089d10e2c3bbad56b43f0c558f4ec93a81b05b9f1fa9c8d4ad6a.txt")
-		//		}
-		//	},
-		//},
-		//{
-		//	name: "GET 101 connections for 210 requests with jwts with all available jwt fields and header",
-		//	fields: fields{config: &config.Config{
-		//		Ctx:                 context.Background(),
-		//		ReqURI:              addr,
-		//		ReqTarget:           210,
-		//		Conns:               11,
-		//		ReadTimeout:         5 * time.Second,
-		//		WriteTimeout:        5 * time.Second,
-		//		Method:              "GET",
-		//		Client:              client,
-		//		VerboseTicker:       time.Second,
-		//		Headers:             []string{"content-type: application/json"},
-		//		JwtHeader:           "some-jwt",
-		//		JwtAud:              "some-aud",
-		//		JwtSub:              "some-subject",
-		//		JwtCustomClaimsJSON: "{\"custom-claim1\": \"abc\", \"custom-claim2\": \"def\"}",
-		//		JwtIss:              "some-issuer",
-		//		JwtKID:              "13325575tevdfbdsfsf",
-		//		JwtKey:              filepath.Join("..", "..", "test", "private-key-jwt.pem"),
-		//		SkipVerify:          true,
-		//	}},
-		//	want: &GoPayloaderResults{
-		//		CompletedReqs: 210,
-		//		FailedReqs:    0,
-		//		Responses: map[worker.ResponseCode]int64{
-		//			200: 210,
-		//		},
-		//		Errors: nil,
-		//	},
-		//	check: func(t *testing.T) {
-		//		f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-4f12b598aa74a10a1a94931f0f93ef9f7afb43e138060ed6ce7f5c9906447c1f.txt"), os.O_RDONLY, os.ModePerm)
-		//		if err != nil {
-		//			if os.IsNotExist(err) {
-		//				t.Fatal(err)
-		//			}
-		//			t.Fatal(err)
-		//		}
-		//		stat, err := f.Stat()
-		//		if err != nil {
-		//			t.Fatal(err)
-		//		}
-		//		if stat.Size() == 0 {
-		//			t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-4f12b598aa74a10a1a94931f0f93ef9f7afb43e138060ed6ce7f5c9906447c1f.txt")
-		//		}
-		//	},
-		//},
+		{
+			name: "GET 10 connections for 210 requests",
+			fields: fields{config: &config.Config{
+				Ctx:           context.Background(),
+				ReqURI:        addr,
+				ReqTarget:     210,
+				Conns:         10,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "GET",
+				Client:        client,
+				VerboseTicker: time.Second,
+				SkipVerify:    true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 210,
+				FailedReqs:    0,
+				Responses: map[worker.ResponseCode]int64{
+					200: 210,
+				},
+				Errors: nil,
+			},
+		},
+		{
+			name: "POST 10 connections for 2 second long test",
+			fields: fields{config: &config.Config{
+				Ctx:           context.Background(),
+				ReqURI:        addr,
+				Conns:         10,
+				Duration:      2 * time.Second,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "POST",
+				Client:        client,
+				VerboseTicker: time.Second,
+				SkipVerify:    true,
+			}},
+		},
+		{
+			name: "PUT 10 connections for 10 second long test with 100 requests",
+			fields: fields{config: &config.Config{
+				Ctx:           context.Background(),
+				ReqURI:        addr,
+				Conns:         10,
+				ReqTarget:     100,
+				Duration:      10 * time.Second,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "PUT",
+				Client:        client,
+				VerboseTicker: time.Second,
+				SkipVerify:    true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 100,
+				FailedReqs:    0,
+				Responses: map[worker.ResponseCode]int64{
+					200: 100,
+				},
+				Errors: nil,
+			},
+		},
+		{
+			name: "GET 10 connections for 210 requests with jwts",
+			fields: fields{config: &config.Config{
+				Ctx:           context.Background(),
+				ReqURI:        addr,
+				ReqTarget:     210,
+				Conns:         10,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "GET",
+				Client:        client,
+				VerboseTicker: time.Second,
+				JwtHeader:     "some-jwt",
+				JwtKey:        filepath.Join("..", "..", "test", "private-key-jwt.pem"),
+				SkipVerify:    true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 210,
+				FailedReqs:    0,
+				Responses: map[worker.ResponseCode]int64{
+					200: 210,
+				},
+				Errors: nil,
+			},
+			check: func(t *testing.T) {
+				f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-b7d91ad840dd089d10e2c3bbad56b43f0c558f4ec93a81b05b9f1fa9c8d4ad6a.txt"), os.O_RDONLY, os.ModePerm)
+				if err != nil {
+					if os.IsNotExist(err) {
+						t.Fatal(err)
+					}
+					t.Fatal(err)
+				}
+				stat, err := f.Stat()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if stat.Size() == 0 {
+					t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-b7d91ad840dd089d10e2c3bbad56b43f0c558f4ec93a81b05b9f1fa9c8d4ad6a.txt")
+				}
+			},
+		},
+		{
+			name: "GET 101 connections for 210 requests with jwts with all available jwt fields and header",
+			fields: fields{config: &config.Config{
+				Ctx:                 context.Background(),
+				ReqURI:              addr,
+				ReqTarget:           210,
+				Conns:               11,
+				ReadTimeout:         5 * time.Second,
+				WriteTimeout:        5 * time.Second,
+				Method:              "GET",
+				Client:              client,
+				VerboseTicker:       time.Second,
+				Headers:             []string{"content-type: application/json"},
+				JwtHeader:           "some-jwt",
+				JwtAud:              "some-aud",
+				JwtSub:              "some-subject",
+				JwtCustomClaimsJSON: "{\"custom-claim1\": \"abc\", \"custom-claim2\": \"def\"}",
+				JwtIss:              "some-issuer",
+				JwtKID:              "13325575tevdfbdsfsf",
+				JwtKey:              filepath.Join("..", "..", "test", "private-key-jwt.pem"),
+				SkipVerify:          true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 210,
+				FailedReqs:    0,
+				Responses: map[worker.ResponseCode]int64{
+					200: 210,
+				},
+				Errors: nil,
+			},
+			check: func(t *testing.T) {
+				f, err := os.OpenFile(filepath.Join(JwtCacheDir, "gopayloader-jwtstore-4f12b598aa74a10a1a94931f0f93ef9f7afb43e138060ed6ce7f5c9906447c1f.txt"), os.O_RDONLY, os.ModePerm)
+				if err != nil {
+					if os.IsNotExist(err) {
+						t.Fatal(err)
+					}
+					t.Fatal(err)
+				}
+				stat, err := f.Stat()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if stat.Size() == 0 {
+					t.Fatalf("file size 0 for jwt cache store for %s \n", "gopayloader-jwtstore-4f12b598aa74a10a1a94931f0f93ef9f7afb43e138060ed6ce7f5c9906447c1f.txt")
+				}
+			},
+		},
 		{
 			name: "GET RSA JWT",
 			fields: fields{config: &config.Config{
@@ -347,61 +348,61 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 				}
 			},
 		},
-		//{
-		//	name: "GET using JWT file only",
-		//	fields: fields{config: &config.Config{
-		//		Ctx:           context.Background(),
-		//		ReqURI:        addr,
-		//		ReqTarget:     10,
-		//		Conns:         1,
-		//		ReadTimeout:   5 * time.Second,
-		//		WriteTimeout:  5 * time.Second,
-		//		Method:        "GET",
-		//		Client:        client,
-		//		VerboseTicker: time.Second,
-		//		Headers:       []string{"content-type: application/json"},
-		//		JwtHeader:     "Authorization",
-		//		JwtsFilename:  filepath.Join("..", "..", "test", "jwtstestfile.txt"),
-		//		SkipVerify:    true,
-		//	}},
-		//	want: &GoPayloaderResults{
-		//		CompletedReqs: 10,
-		//		FailedReqs:    0,
-		//		Responses: map[worker.ResponseCode]int64{
-		//			200: 10,
-		//		},
-		//		Errors: nil,
-		//	},
-		//},
-		//{
-		//	name: "Error hostname incorrect format - missing port",
-		//	fields: fields{config: &config.Config{
-		//		Ctx:                 context.Background(),
-		//		ReqURI:              "http://localhost/",
-		//		ReqTarget:           210,
-		//		Conns:               101,
-		//		ReadTimeout:         5 * time.Second,
-		//		WriteTimeout:        5 * time.Second,
-		//		Method:              "GET",
-		//		Client:              client,
-		//		VerboseTicker:       time.Second,
-		//		Headers:             []string{"content-type: application/json"},
-		//		JwtHeader:           "some-jwt",
-		//		JwtAud:              "some-aud",
-		//		JwtSub:              "some-subject",
-		//		JwtCustomClaimsJSON: "{\"custom-claim1\": \"abc\", \"custom-claim2\": \"def\"}",
-		//		JwtIss:              "some-issuer",
-		//		JwtKID:              "13325575tevdfbdsfsf",
-		//		JwtKey:              filepath.Join("..", "..", "test", "private-key-jwt.pem"),
-		//		SkipVerify:          true,
-		//	}},
-		//	want: &GoPayloaderResults{
-		//		CompletedReqs: 0,
-		//		FailedReqs:    0,
-		//		Errors:        nil,
-		//	},
-		//	wantErr: errors.New("url not in correct format http://localhost/ needs to be like protocol://host:port/path i.e. https://localhost:443/some-path"),
-		//},
+		{
+			name: "GET using JWT file only",
+			fields: fields{config: &config.Config{
+				Ctx:           context.Background(),
+				ReqURI:        addr,
+				ReqTarget:     10,
+				Conns:         1,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "GET",
+				Client:        client,
+				VerboseTicker: time.Second,
+				Headers:       []string{"content-type: application/json"},
+				JwtHeader:     "Authorization",
+				JwtsFilename:  filepath.Join("..", "..", "test", "jwtstestfile.txt"),
+				SkipVerify:    true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 10,
+				FailedReqs:    0,
+				Responses: map[worker.ResponseCode]int64{
+					200: 10,
+				},
+				Errors: nil,
+			},
+		},
+		{
+			name: "Error hostname incorrect format - missing port",
+			fields: fields{config: &config.Config{
+				Ctx:                 context.Background(),
+				ReqURI:              "http://localhost/",
+				ReqTarget:           210,
+				Conns:               101,
+				ReadTimeout:         5 * time.Second,
+				WriteTimeout:        5 * time.Second,
+				Method:              "GET",
+				Client:              client,
+				VerboseTicker:       time.Second,
+				Headers:             []string{"content-type: application/json"},
+				JwtHeader:           "some-jwt",
+				JwtAud:              "some-aud",
+				JwtSub:              "some-subject",
+				JwtCustomClaimsJSON: "{\"custom-claim1\": \"abc\", \"custom-claim2\": \"def\"}",
+				JwtIss:              "some-issuer",
+				JwtKID:              "13325575tevdfbdsfsf",
+				JwtKey:              filepath.Join("..", "..", "test", "private-key-jwt.pem"),
+				SkipVerify:          true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 0,
+				FailedReqs:    0,
+				Errors:        nil,
+			},
+			wantErr: errors.New("url not in correct format http://localhost/ needs to be like protocol://host:port/path i.e. https://localhost:443/some-path"),
+		},
 	}
 
 	if cleanup != nil {

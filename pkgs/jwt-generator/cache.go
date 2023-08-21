@@ -2,13 +2,15 @@ package jwt_generator
 
 import (
 	"bufio"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
+
+const byteSizeCounter = 20
 
 type cache struct {
 	f       *os.File
@@ -23,12 +25,19 @@ func newCache(f *os.File) (*cache, error) {
 	// Get count found on first line of the file
 	c.scanner.Split(bufio.ScanLines)
 	if c.scanner.Scan() {
-		bb := make([]byte, 8)
+		bb := make([]byte, byteSizeCounter)
 		_, err := f.ReadAt(bb, 0)
 		if err != nil {
 			return nil, err
 		}
-		c.count = int64(binary.LittleEndian.Uint64(bb))
+
+		s := string(bb)
+		count, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		c.count = count
 		return &c, nil
 	}
 	return &c, nil
@@ -62,14 +71,31 @@ func (c *cache) get(count int64) (<-chan string, <-chan error) {
 	}
 
 	meta := c.scanner.Bytes()
-	if len(meta) < 8 {
+	if len(meta) < byteSizeCounter {
 		errs <- fmt.Errorf("jwt_generator: retrieving; corrupt jwt cache, wanted 8 bytes got %d", len(meta))
 		close(errs)
 		close(recv)
 		return recv, errs
 	}
 
-	if count > int64(binary.LittleEndian.Uint64(meta[0:8])) {
+	num := make([]byte, 0)
+	for _, m := range meta {
+		if m == 0 {
+			break
+		}
+		num = append(num, m)
+	}
+
+	s := string(num)
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		errs <- fmt.Errorf("failed to get jwt count; %v", err)
+		close(errs)
+		close(recv)
+		return recv, errs
+	}
+
+	if count > i {
 		errs <- errors.New("jwt_generator: retrieving; not enough jwts stored in cache")
 		close(errs)
 		close(recv)
@@ -84,20 +110,25 @@ func (c *cache) get(count int64) (<-chan string, <-chan error) {
 
 func (c *cache) retrieve(count int64, recv chan<- string, errs chan<- error) {
 	var i int64 = 0
+	defer func() {
+		close(errs)
+		close(recv)
+	}()
 
 	for i = 0; i < count; i++ {
 		if c.scanner.Scan() {
 			recv <- string(c.scanner.Bytes())
 			continue
 		}
-		// reached EOF or err
+
 		if err := c.scanner.Err(); err != nil {
 			errs <- err
-			close(errs)
+			return
 		}
-		break
+
+		errs <- errors.New("unable to read anymore jwts from file")
+		return
 	}
-	close(recv)
 }
 
 func (c *cache) save(tokens []string) error {
@@ -116,16 +147,20 @@ func (c *cache) save(tokens []string) error {
 		return err
 	}
 
-	b := make([]byte, 8)
-	newCount := uint64(int64(add) + c.count)
-	binary.LittleEndian.PutUint64(b, newCount)
+	newCount := int64(add) + c.count
+	s := strconv.FormatInt(newCount, 10)
+
+	b := make([]byte, byteSizeCounter)
+	for i, ss := range s {
+		b[i] = byte(ss)
+	}
 
 	_, err = c.f.WriteAt(b, 0)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.f.WriteAt([]byte{byte('\n')}, 9)
+	_, err = c.f.WriteAt([]byte{byte('\n')}, byteSizeCounter)
 	if err != nil {
 		return err
 	}
