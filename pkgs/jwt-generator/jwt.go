@@ -1,23 +1,23 @@
 package jwt_generator
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"strings"
+	config "github.com/domsolutions/gopayloader/config"
 	jwt_signer "github.com/domsolutions/gopayloader/pkgs/jwt-signer"
 	"github.com/domsolutions/gopayloader/pkgs/jwt-signer/definition"
-	config "github.com/domsolutions/gopayloader/config"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/pterm/pterm"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
-	"bufio"
 )
 
 const (
@@ -60,62 +60,57 @@ func (c *Config) validate() error {
 	return nil
 }
 
-// Gets a certain number of JWTs from a file, looping through / reusing them if necessary
+// GetUserSuppliedJWTs Gets a count number of JWTs from a file, reusing them if not enough exist to match count
 func GetUserSuppliedJWTs(fname string, count int64) (<-chan string, <-chan error) {
-	// Open channels
 	recv := make(chan string, 1000000)
 	errs := make(chan error, 1)
+	go getUserJWTS(fname, count, errs, recv)
 
-	// Open the file
+	// give goroutine time to prime channel with jwts for workers
+	time.Sleep(1 * time.Second)
+	return recv, errs
+}
+
+func getUserJWTS(fname string, count int64, errs chan<- error, jwts chan<- string) {
+	defer func() {
+		close(errs)
+		close(jwts)
+	}()
+
 	file, err := os.OpenFile(fname, os.O_RDONLY, os.ModePerm)
 	if err != nil {
-		errs <- fmt.Errorf("jwt_generator: retrieving; failed to open file containing JWTs")
-		close(errs)
-		close(recv)
-		return recv, errs
+		errs <- fmt.Errorf("jwt_generator: retrieving; failed to open file containing JWTs; %v", err)
+		return
 	}
+	defer file.Close()
 
-	numJwtsUsedSoFar := int64(0)
-	for numJwtsUsedSoFar < count {
+	jwtsSent := int64(0)
+	for jwtsSent < count {
 		// Set pointer to beginning of file
 		if _, err := file.Seek(0, 0); err != nil {
 			errs <- err
-			close(errs)
-			close(recv)
-			return recv, errs
+			return
 		}
-
-		// Read file lines
 		scanner := bufio.NewScanner(file)
 		scanner.Split(bufio.ScanLines)
-		fileContainsAtLeastOneJWT := false
+
+		fileValid := false
 		for scanner.Scan() {
-			fileContainsAtLeastOneJWT = true
-			recv <- string(scanner.Bytes())
-			numJwtsUsedSoFar++
+			fileValid = true
+			jwts <- string(scanner.Bytes())
+			jwtsSent++
 			// Stop reading file when enough JWTs have been fetched
-			if numJwtsUsedSoFar >= count {
-				break
+			if jwtsSent == count {
+				return
 			}
 		}
-		if !fileContainsAtLeastOneJWT {
-			// Close the file
-			if err = file.Close(); err != nil {
-				fmt.Printf("Could not close the file due to this %s error \n", err) 
-			}
+
+		if !fileValid {
 			errs <- fmt.Errorf("jwt_generator: retrieving; file doesn't contain a JWT")
-			close(errs)
-			close(recv)
-			return recv, errs
+			return
 		}
 		// Loops if user asked for more requests than there were JWTs in the file, so JWTs get reused
 	}
-
-	// Close the file
-	if err = file.Close(); err != nil {
-		fmt.Printf("Could not close the file due to this %s error \n", err) 
-	}
-	return recv, errs
 }
 
 func (j *JWTGenerator) getFileName(dir string) string {

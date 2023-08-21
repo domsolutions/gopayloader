@@ -111,6 +111,7 @@ func (c *cache) save(tokens []string) error {
 	if stat.Size() > 0 {
 		pos = stat.Size()
 	}
+
 	if _, err := c.f.WriteAt([]byte(strings.Join(tokens, "\n")+"\n"), pos); err != nil {
 		return err
 	}
@@ -118,6 +119,7 @@ func (c *cache) save(tokens []string) error {
 	b := make([]byte, 8)
 	newCount := uint64(int64(add) + c.count)
 	binary.LittleEndian.PutUint64(b, newCount)
+
 	_, err = c.f.WriteAt(b, 0)
 	if err != nil {
 		return err

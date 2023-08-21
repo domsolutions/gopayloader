@@ -89,14 +89,8 @@ func getReq(client http_clients.GoPayLoaderClient, config *http_clients.Config) 
 	return req, nil
 }
 
-func jwtMiddleware(w *WorkerBase) {
+func jwtMiddleware(w *WorkerBase)  {
 	select {
-	case <-w.config.Ctx.Done():
-		// user cancelled
-		return
-	//case err := <-w.config.JwtStreamErr:
-	//	pterm.Error.Printf("Failed to get jwts from cache, got error; %v \n", err)
-	//	return TODO fix
 	case jwt := <-w.config.JwtStreamReceiver:
 		//fmt.Printf("GOT JWT %sHELP \n", jwt)
 		w.req.SetHeader(w.config.JWTHeader, jwt)

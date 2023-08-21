@@ -41,7 +41,6 @@ type Config struct {
 	Method            string
 	Verbose           bool
 	JwtStreamReceiver <-chan string
-	JwtStreamErr      <-chan error
 	JWTHeader         string
 	Headers           []string
 	Body              string
