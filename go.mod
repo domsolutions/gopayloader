@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/dgrr/http2 v0.3.5
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/pterm/pterm v0.12.66
 	github.com/quic-go/quic-go v0.38.0
