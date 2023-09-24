@@ -2,8 +2,8 @@ package fasthttp
 
 import (
 	"crypto/tls"
-	"github.com/dgrr/http2"
 	"github.com/domsolutions/gopayloader/pkgs/http-clients"
+	"github.com/domsolutions/http2"
 	"github.com/valyala/fasthttp"
 	"net"
 	"net/url"
