@@ -11,7 +11,7 @@ require (
 	github.com/quic-go/quic-go v0.40.0
 	github.com/spf13/cobra v1.7.0
 	github.com/valyala/fasthttp v1.50.0
-	golang.org/x/text v0.13.0
+	golang.org/x/text v0.14.0
 )
 
 require (
