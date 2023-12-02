@@ -10,3 +10,6 @@ gopayloader-linux-amd64
 gopayloader-windows-amd64.exe
 *.tar.gz
 build
+go.work
+main2.go
+go.work.sum

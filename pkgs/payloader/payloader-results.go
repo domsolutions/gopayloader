@@ -10,31 +10,26 @@ func (p *PayLoader) ComputeResults(workers []worker.Worker, results *GoPayloader
 	results.Start = p.startTime
 	results.End = p.stopTime
 	results.Total = p.stopTime.Sub(p.startTime)
-	results.Errors = make(map[string]uint)
+	results.Errors = make(map[string]uint64)
 	results.Responses = make(map[worker.ResponseCode]int64)
 
 	pterm.Debug.Println("Calculating response code statistics")
 
 	for _, w := range workers {
 		stats := w.Stats()
-		results.CompletedReqs += stats.CompletedReqs
-		results.FailedReqs += stats.FailedReqs
+		results.CompletedReqs += stats.CompletedReqs.Load()
+		results.FailedReqs += stats.FailedReqs.Load()
 
-		for err, count := range stats.Errors {
-			if _, ok := results.Errors[err]; ok {
-				results.Errors[err] += count
-			} else {
-				results.Errors[err] = count
-			}
-		}
+		stats.Errors.Range(func(key, value any) bool {
+			results.Errors[key.(string)] += value.(uint64)
+			return true
+		})
 
-		for code, val := range stats.Responses {
-			if _, ok := results.Responses[code]; ok {
-				results.Responses[code] += val
-			} else {
-				results.Responses[code] = val
-			}
-		}
+		stats.Responses.Range(func(key, value any) bool {
+			results.Responses[key.(worker.ResponseCode)] += value.(int64)
+			return true
+		})
+
 	}
 
 	if results.CompletedReqs > 0 {

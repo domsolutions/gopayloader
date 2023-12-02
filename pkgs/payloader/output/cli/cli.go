@@ -62,7 +62,7 @@ func displayRespSize(resp payloader.ByteSize, t table.Writer) {
 	t.AppendSeparator()
 }
 
-func displayErrors(errors map[string]uint, t table.Writer) {
+func displayErrors(errors map[string]uint64, t table.Writer) {
 	rows := make([]table.Row, 0)
 	for err, count := range errors {
 		rows = append(rows, table.Row{"Error; " + err, count})

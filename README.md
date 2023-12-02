@@ -4,11 +4,10 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/domsolutions/gopayloader)](https://goreportcard.com/report/github.com/domsolutions/gopayloader)
 [![GoDoc](https://godoc.org/github.com/domsolutions/gopayloader?status.svg)](http://godoc.org/github.com/domsolutions/gopayloader)
 
-Gopayloader is an HTTP/S benchmarking tool. Inspired by [bombardier](https://github.com/codesenberg/bombardier/) it also uses [fasthttp](https://github.com/valyala/fasthttp) which allows for fast creation and sending of requests due to low allocations and lots of other improvements. But with 
-added improvement of also supporting fashttp for HTTP/2.
+Gopayloader is an HTTP/S benchmarking tool. Inspired by [bombardier](https://github.com/codesenberg/bombardier/) it also uses [fasthttp](https://github.com/valyala/fasthttp) which allows for fast creation and sending of requests due to low allocations and lots of other improvements.
 It uses this client by default, a different client can be used with `--client` flag.
 
-Supports all HTTP versions, using [quic-go](https://github.com/quic-go/quic-go) for HTTP/3 client with `--client nethttp-3`. For HTTP/2 can use fasthttp with `--client fasthttp-2` or standard core golang `net/http` with `--client nethttp`
+Supports all HTTP versions, using [quic-go](https://github.com/quic-go/quic-go) for HTTP/3 client with `--client nethttp3`. For HTTP/2 can use  with `--client nethttp2`. By default uses fasthttp HTTP/1.1 client.
 
 Supports ability to generate custom JWTs to send in headers with payload (only limited by HDD size). This can be useful if the service being
 tested is JWT authenticated. Each JWT generated will be unique as contains a unique `jti` in claims i.e.
@@ -68,8 +67,6 @@ achieved mean RPS of **53,098**
 To list all available flags run;
 
 ```shell
-./gopayloader run --help
-
 Load test HTTP/S server - supports HTTP/1.1 HTTP/2 HTTP/3
 
 Usage:
@@ -78,10 +75,10 @@ Usage:
 Flags:
   -b, --body string              request body
       --body-file string         read request body from file
-      --client string            fasthttp-1 for fast http/1.1 requests
-                                 fasthttp-2 for fast http/2 requests 
-                                 nethttp for standard net/http requests supporting http/1.1 http/2
-                                 nethttp-3 for standard net/http requests supporting http/3 using quic-go (default "fasthttp-1")
+      --client string            fasthttp for fast http/1.1 requests
+                                 nethttp for standard net/http requests using http/1.1
+                                 nethttp2 for standard net/http requests using http/2
+                                 nethttp3 for standard net/http requests supporting http/3 using quic-go (default "fasthttp")
   -c, --connections uint         Number of simultaneous connections (default 1)
   -k, --disable-keep-alive       Disable keep-alive connections
   -H, --headers strings          headers to send in request, can have multiple i.e -H 'content-type:application/json' -H' connection:close'
@@ -97,6 +94,7 @@ Flags:
   -m, --method string            request method (default "GET")
       --mtls-cert string         mTLS cert path
       --mtls-key string          mTLS cert private key path
+      --parallel                 Sends reqs in parallel per connection with HTTP/2
       --read-timeout duration    Read timeout (default 5s)
   -r, --requests int             Number of requests
       --skip-verify              Skip verify SSL cert signer
