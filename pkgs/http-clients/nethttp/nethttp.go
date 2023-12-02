@@ -5,12 +5,15 @@ import (
 	"crypto/tls"
 	"github.com/domsolutions/gopayloader/pkgs/http-clients"
 	"github.com/quic-go/quic-go/http3"
+	"golang.org/x/net/http2"
 	"io"
+	"log"
 	"net/http"
 )
 
 type Client struct {
 	client *http.Client
+	http2  bool
 }
 
 type Req struct {
@@ -26,6 +29,10 @@ func (r *Resp) StatusCode() int {
 }
 
 func (r *Resp) Close() {
+	// need to read conn before closing otherwise conn not freed
+	if _, err := io.Copy(io.Discard, r.resp.Body); err != nil {
+		log.Printf("Failed to read response body and discard %v \n", err)
+	}
 	r.resp.Body.Close()
 }
 
@@ -80,6 +87,10 @@ func (c *Client) CloseConns() {
 	c.client.CloseIdleConnections()
 }
 
+func (c *Client) HTTP2() bool {
+	return c.http2
+}
+
 func (c *Client) NewResponse() http_clients.Response {
 	return &Resp{
 		resp: &http.Response{},
@@ -91,6 +102,7 @@ func (c *Client) NewReq(method, url string) (http_clients.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Connection", "Keep-Alive")
 
 	return &Req{
 		req: req,
@@ -110,14 +122,39 @@ func GetNetHTTPClient(config *http_clients.Config) (http_clients.GoPayLoaderClie
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
 
-	return &Client{client: &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-			MaxConnsPerHost: 1,
-			MaxIdleConns:    1,
-		},
-		Timeout: config.ReadTimeout + config.WriteTimeout,
-	}}, nil
+	return &Client{
+		http2: false,
+		client: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConfig,
+				MaxConnsPerHost: 1,
+			},
+			Timeout: config.ReadTimeout + config.WriteTimeout,
+		}}, nil
+}
+
+func GetNetHTTP2Client(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: config.SkipVerify,
+	}
+
+	if config.MTLSCert != "" && config.MTLSKey != "" {
+		cert, err := tls.LoadX509KeyPair(config.MTLSCert, config.MTLSKey)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	return &Client{
+		http2: true,
+		client: &http.Client{
+			Transport: &http2.Transport{
+				TLSClientConfig:            tlsConfig,
+				StrictMaxConcurrentStreams: true,
+			},
+			Timeout: config.ReadTimeout + config.WriteTimeout,
+		}}, nil
 }
 
 func GetNetHTTP3Client(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
@@ -141,6 +178,7 @@ func GetNetHTTP3Client(config *http_clients.Config) (http_clients.GoPayLoaderCli
 	}
 
 	return &Client{
+		http2: false,
 		client: &http.Client{
 			Transport: roundTripper,
 		},

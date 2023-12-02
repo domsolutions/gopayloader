@@ -3,7 +3,6 @@ package fasthttp
 import (
 	"crypto/tls"
 	"github.com/domsolutions/gopayloader/pkgs/http-clients"
-	"github.com/domsolutions/http2"
 	"github.com/valyala/fasthttp"
 	"net"
 	"net/url"
@@ -11,6 +10,7 @@ import (
 
 type Client struct {
 	client *fasthttp.HostClient
+	http2  bool
 }
 
 type Req struct {
@@ -59,15 +59,21 @@ func (fh *Client) Do(req http_clients.Request, resp http_clients.Response) error
 	return fh.client.Do(req.(*Req).req, resp.(*Resp).resp)
 }
 
+func (c *Client) HTTP2() bool {
+	return c.http2
+}
+
 func (c *Client) CloseConns() {
 	c.client.CloseIdleConnections()
 }
 
 func (fh *Client) NewResponse() http_clients.Response {
+	// TODO: buffer pool
 	return &Resp{resp: &fasthttp.Response{}}
 }
 
 func (fh *Client) NewReq(method, url string) (http_clients.Request, error) {
+	// TODO: buffer pool
 	r := &fasthttp.Request{}
 	r.SetRequestURI(url)
 	r.Header.SetMethodBytes([]byte(method))
@@ -107,20 +113,5 @@ func GetFastHTTPClient1(config *http_clients.Config) (http_clients.GoPayLoaderCl
 		},
 	}
 
-	return &Client{client: client}, nil
-}
-
-func GetFastHTTPClient2(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
-	client, err := GetFastHTTPClient1(config)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := http2.ConfigureClient(client.(*Client).client, http2.ClientOpts{
-		//MaxResponseTime: config.ReadTimeout + config.WriteTimeout,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &Client{client: client.(*Client).client}, nil
+	return &Client{client: client, http2: false}, nil
 }

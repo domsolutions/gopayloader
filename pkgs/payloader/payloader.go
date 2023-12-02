@@ -48,7 +48,7 @@ type GoPayloaderResults struct {
 	RPS           RPS
 	Latency       Latency
 	Responses     map[worker.ResponseCode]int64
-	Errors        map[string]uint
+	Errors        map[string]uint64
 	ReqByteSize   ByteSize
 	RespByteSize  ByteSize
 }
@@ -156,6 +156,7 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 
 	var conn uint
 	for conn = 0; conn < p.config.Conns; conn++ {
+
 		c := &http_clients.Config{
 			ReqURI:           p.config.ReqURI,
 			DisableKeepAlive: p.config.DisableKeepAlive,
@@ -176,6 +177,7 @@ func (p *PayLoader) handleReqs() (*GoPayloaderResults, error) {
 			BodyFile:         p.config.BodyFile,
 			ReqStats:         reqStats,
 			Client:           p.config.Client,
+			Parallel:         p.config.Parallel,
 		}
 
 		// evenly distribute remainder reqs

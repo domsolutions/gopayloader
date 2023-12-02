@@ -2,14 +2,15 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/domsolutions/gopayloader/pkgs/payloader/worker"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
 	"time"
-	"encoding/json"
 )
 
 type Config struct {
@@ -40,9 +41,10 @@ type Config struct {
 	Body                 string
 	BodyFile             string
 	Client               string
+	Parallel             bool
 }
 
-func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtCustomClaimsJSON, jwtIss, jwtAud, jwtHeader, jwtsFilename string, headers []string, body, bodyFile string, client string) *Config {
+func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtCustomClaimsJSON, jwtIss, jwtAud, jwtHeader, jwtsFilename string, headers []string, body, bodyFile string, client string, parallel bool) *Config {
 	return &Config{
 		Ctx:                 ctx,
 		ReqURI:              reqURI,
@@ -70,6 +72,7 @@ func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKee
 		Body:                body,
 		BodyFile:            bodyFile,
 		Client:              client,
+		Parallel:            parallel,
 	}
 }
 
@@ -195,6 +198,10 @@ func (c *Config) Validate() error {
 			}
 			return fmt.Errorf("config: body file error checking file exists; %v", err)
 		}
+	}
+
+	if c.Parallel && c.Client != worker.HttpClientNetHTTP2 {
+		return fmt.Errorf("can only run parallel with %s client", worker.HttpClientNetHTTP2)
 	}
 
 	if c.VerboseTicker == 0 {

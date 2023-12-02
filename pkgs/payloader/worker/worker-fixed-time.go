@@ -22,6 +22,9 @@ func (w *WorkerFixedTime) Run(wg *sync.WaitGroup) {
 			// user cancelled
 			return
 		case <-ticker.C:
+			if w.parallel {
+				w.parallelWg.Wait()
+			}
 			return
 		default:
 			w.run()

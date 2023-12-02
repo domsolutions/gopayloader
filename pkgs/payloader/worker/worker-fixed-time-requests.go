@@ -26,9 +26,13 @@ func (w *WorkerFixedTimeRequests) Run(wg *sync.WaitGroup) {
 			return
 		case <-deadline.Done():
 			// required reqs were not completed in time period, finish reqs
-			if w.config.ReqTarget != w.stats.CompletedReqs+w.stats.FailedReqs {
+			if w.config.ReqTarget != w.CompletedReqs.Load()+w.FailedReqs.Load() {
 				w.run()
 				continue
+			}
+
+			if w.parallel {
+				w.parallelWg.Wait()
 			}
 			return
 		case <-newReq.C:

@@ -3,6 +3,7 @@ package worker
 import (
 	http_clients "github.com/domsolutions/gopayloader/pkgs/http-clients"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -14,38 +15,63 @@ type Worker interface {
 }
 
 type WorkerBase struct {
-	config     *http_clients.Config
-	client     http_clients.GoPayLoaderClient
-	stats      Stats
-	req        http_clients.Request
-	resp       http_clients.Response
-	middleware func(w *WorkerBase)
-	reqStats   chan<- time.Duration
+	statsSuccessLock *sync.Mutex
+	statsErrorLock   *sync.Mutex
+	config           *http_clients.Config
+	client           http_clients.GoPayLoaderClient
+	stats            Stats
+	middleware       func(w *WorkerBase, req http_clients.Request)
+	reqStats         chan<- time.Duration
+	parallel         bool
+	method           string
+	url              string
+	reqSize          int64
+	respSize         int64
+	parallelWg       *sync.WaitGroup
+	CompletedReqs    atomic.Int64
+	FailedReqs       atomic.Int64
 }
 
 func (w *WorkerBase) ReqSize() int64 {
-	return w.req.Size()
+	return w.reqSize
 }
 
 func (w *WorkerBase) RespSize() int64 {
-	if w.resp == nil {
-		return 0
+	return w.respSize
+}
+
+func (w *WorkerBase) updateErrStats(err error) {
+	w.statsErrorLock.Lock()
+	defer w.statsErrorLock.Unlock()
+
+	val, ok := w.stats.Errors.Load(err.Error())
+	if ok {
+		w.stats.Errors.Store(err.Error(), val.(uint64)+1)
+	} else {
+		w.stats.Errors.Store(err.Error(), uint64(1))
 	}
-	return w.resp.Size()
+
+	w.FailedReqs.Add(1)
 }
 
 func (w *WorkerBase) run() {
-	err := w.process()
-	if err != nil {
-		if _, ok := w.stats.Errors[err.Error()]; ok {
-			w.stats.Errors[err.Error()]++
-		} else {
-			w.stats.Errors[err.Error()] = 1
-		}
-		w.stats.FailedReqs++
+	if w.parallel {
+		w.parallelWg.Add(1)
+		go func() {
+			defer w.parallelWg.Done()
+
+			err := w.process()
+			if err != nil {
+				w.updateErrStats(err)
+			}
+		}()
 		return
 	}
-	w.stats.CompletedReqs++
+
+	err := w.process()
+	if err != nil {
+		w.updateErrStats(err)
+	}
 }
 
 func (w *WorkerBase) process() error {
@@ -53,36 +79,60 @@ func (w *WorkerBase) process() error {
 	var end int64
 	var err error
 
+	req, err := newReq(w.client, w.config)
+	if err != nil {
+		return err
+	}
+
+	resp := w.client.NewResponse()
+
 	defer func() {
 		if err == nil {
 			w.reqStats <- time.Duration(end - begin)
-		}
-		if w.resp != nil {
 			// this frees up the connection to be used by other requests
-			w.resp.Close()
+			resp.Close()
 		}
 	}()
 
 	if w.middleware != nil {
-		w.middleware(w)
+		w.middleware(w, req)
 	}
 
-	if err = w.client.Do(w.req, w.resp); err != nil {
+	if err = w.client.Do(req, resp); err != nil {
 		end = time.Now().UnixNano()
 		return err
 	}
 	end = time.Now().UnixNano()
 
-	status := w.resp.StatusCode()
-	_, ok := w.stats.Responses[(ResponseCode(status))]
-	if ok {
-		w.stats.Responses[(ResponseCode(status))]++
-		return nil
-	}
-	w.stats.Responses[(ResponseCode(status))] = 1
+	w.updateRespStats(req, resp)
 	return nil
 }
 
+func (w *WorkerBase) updateRespStats(req http_clients.Request, resp http_clients.Response) {
+	w.statsSuccessLock.Lock()
+	defer w.statsSuccessLock.Unlock()
+
+	if w.reqSize == 0 {
+		w.reqSize = req.Size()
+	}
+
+	if w.respSize == 0 {
+		w.respSize = resp.Size()
+	}
+
+	w.CompletedReqs.Add(1)
+
+	val, ok := w.stats.Responses.Load(ResponseCode(resp.StatusCode()))
+	if ok {
+		w.stats.Responses.Store(ResponseCode(resp.StatusCode()), val.(int64)+1)
+		return
+	}
+
+	w.stats.Responses.Store(ResponseCode(resp.StatusCode()), int64(1))
+}
+
 func (w *WorkerBase) Stats() Stats {
+	w.stats.FailedReqs = w.FailedReqs.Load()
+	w.stats.CompletedReqs = w.CompletedReqs.Load()
 	return w.stats
 }

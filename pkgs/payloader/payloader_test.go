@@ -9,6 +9,7 @@ import (
 	"github.com/quic-go/quic-go"
 	httpv3server "github.com/quic-go/quic-go/http3"
 	"github.com/valyala/fasthttp"
+	golanghttp2 "golang.org/x/net/http2"
 	"log"
 	"net/http"
 	"os"
@@ -21,9 +22,14 @@ import (
 var (
 	testServerHTTP3 httpv3server.Server
 	testFastHTTP    fasthttp.Server
+	crtPath         string
+	keyPath         string
 )
 
 func init() {
+	crtPath = filepath.Join("..", "..", "test", "server.crt")
+	keyPath = filepath.Join("..", "..", "test", "server.key")
+
 	go testStartHTTP1Server("localhost:8888")
 	go testStartHTTP2Server("localhost:8889")
 	go testStartHTTP3Server("localhost:8890")
@@ -37,12 +43,12 @@ func init() {
 }
 
 func tlsConfig() *tls.Config {
-	crt, err := os.ReadFile(filepath.Join("..", "..", "test", "server.crt"))
+	crt, err := os.ReadFile(crtPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	key, err := os.ReadFile(filepath.Join("..", "..", "test", "server.key"))
+	key, err := os.ReadFile(keyPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,31 +117,36 @@ func testStartHTTP2Server(addr string) {
 		}
 	})
 
-	if err := server.ListenAndServeTLS("", ""); err != nil {
+	err = golanghttp2.ConfigureServer(server, &golanghttp2.Server{})
+	if err != nil {
+		panic(err)
+	}
+
+	if err := server.ListenAndServeTLS(crtPath, keyPath); err != nil {
 		log.Println(err)
 	}
 }
 
 func TestPayLoader_RunFastHTTP1NonSSL(t *testing.T) {
-	testPayLoader_Run(t, "http://localhost:8888", "fasthttp-1", func() {
+	testPayLoader_Run(t, "http://localhost:8888", "fasthttp", func() {
 		testFastHTTP.Shutdown()
 	})
 }
 
 func TestPayLoader_RunFastHTTP1SSL(t *testing.T) {
-	testPayLoader_Run(t, "https://localhost:8889", "fasthttp-1", nil)
+	testPayLoader_Run(t, "https://localhost:8889", "fasthttp", nil)
+}
+
+func TestPayLoader_RunNetHTT21SSL(t *testing.T) {
+	testPayLoader_Run(t, "https://localhost:8889", "nethttp2", nil)
 }
 
 func TestPayLoader_RunNetHTTP1SSL(t *testing.T) {
 	testPayLoader_Run(t, "https://localhost:8889", "nethttp", nil)
 }
 
-func TestPayLoader_RunFastHTTP2SSL(t *testing.T) {
-	testPayLoader_Run(t, "https://localhost:8889", "fasthttp-2", nil)
-}
-
 func TestPayLoader_RunNetHTTP3(t *testing.T) {
-	testPayLoader_Run(t, "https://localhost:8890", "nethttp-3", func() {
+	testPayLoader_Run(t, "https://localhost:8890", "nethttp3", func() {
 		testServerHTTP3.Close()
 	})
 }
@@ -144,13 +155,16 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 	type fields struct {
 		config *config.Config
 	}
-	tests := []struct {
+
+	type tcase struct {
 		name    string
 		fields  fields
 		want    *GoPayloaderResults
 		wantErr error
 		check   func(t *testing.T)
-	}{
+	}
+
+	tests := []tcase{
 		{
 			name: "GET 10 connections for 210 requests",
 			fields: fields{config: &config.Config{
@@ -403,6 +417,33 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 			},
 			wantErr: errors.New("url not in correct format http://localhost/ needs to be like protocol://host:port/path i.e. https://localhost:443/some-path"),
 		},
+	}
+
+	if client == "nethttp2" {
+		tests = append(tests, tcase{
+			name: "PARALLEL - GET 10 connections for 210 requests",
+			fields: fields{config: &config.Config{
+				Parallel:      true,
+				Ctx:           context.Background(),
+				ReqURI:        addr,
+				ReqTarget:     210,
+				Conns:         10,
+				ReadTimeout:   5 * time.Second,
+				WriteTimeout:  5 * time.Second,
+				Method:        "GET",
+				Client:        client,
+				VerboseTicker: time.Second,
+				SkipVerify:    true,
+			}},
+			want: &GoPayloaderResults{
+				CompletedReqs: 210,
+				FailedReqs:    0,
+				Responses: map[worker.ResponseCode]int64{
+					200: 210,
+				},
+				Errors: nil,
+			},
+		})
 	}
 
 	if cleanup != nil {

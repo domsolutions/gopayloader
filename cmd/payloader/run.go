@@ -33,6 +33,7 @@ const (
 	argBody            = "body"
 	argBodyFile        = "body-file"
 	argClient          = "client"
+	argParallel        = "parallel"
 )
 
 var (
@@ -60,6 +61,7 @@ var (
 	headers          *[]string
 	body             string
 	bodyFile         string
+	parallel         bool
 )
 
 var runCmd = &cobra.Command{
@@ -98,7 +100,8 @@ var runCmd = &cobra.Command{
 			*headers,
 			body,
 			bodyFile,
-			client)
+			client,
+			parallel)
 	},
 }
 
@@ -106,11 +109,12 @@ func init() {
 	runCmd.Flags().Int64VarP(&reqs, argRequests, "r", 0, "Number of requests")
 	runCmd.Flags().UintVarP(&conns, argConnections, "c", 1, "Number of simultaneous connections")
 	runCmd.Flags().BoolVarP(&disableKeepAlive, argKeepAlive, "k", false, "Disable keep-alive connections")
+	runCmd.Flags().BoolVar(&parallel, argParallel, false, "Sends reqs in parallel per connection with HTTP/2")
 
 	runCmd.Flags().BoolVar(&skipVerify, argVerifySigner, false, "Skip verify SSL cert signer")
 	runCmd.Flags().DurationVarP(&duration, argTime, "t", 0, "Execution time window, if used with -r will uniformly distribute reqs within time window, without -r reqs are unlimited")
-	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 5*time.Second, "Read timeout")
-	runCmd.Flags().DurationVar(&writeTimeout, argWriteTimeout, 5*time.Second, "Write timeout")
+	runCmd.Flags().DurationVar(&readTimeout, argReadTimeout, 10*time.Second, "Read timeout")
+	runCmd.Flags().DurationVar(&writeTimeout, argWriteTimeout, 10*time.Second, "Write timeout")
 	runCmd.Flags().StringVarP(&method, argMethod, "m", "GET", "request method")
 	runCmd.Flags().StringVarP(&body, argBody, "b", "", "request body")
 	runCmd.Flags().StringVar(&bodyFile, argBodyFile, "", "read request body from file")
@@ -121,8 +125,8 @@ func init() {
 	runCmd.Flags().StringVar(&mTLSKey, argMTLSKey, "", "mTLS cert private key path")
 
 	runCmd.Flags().StringVar(&client, argClient, worker.HttpClientFastHTTP1, worker.HttpClientFastHTTP1+` for fast http/1.1 requests
-`+worker.HttpClientFastHTTP2+` for fast http/2 requests 
-`+worker.HttpClientNetHTTP+` for standard net/http requests supporting http/1.1 http/2
+`+worker.HttpClientNetHTTP+` for standard net/http requests using http/1.1
+`+worker.HttpClientNetHTTP2+` for standard net/http requests using http/2
 `+worker.HttpClientNetHTTP3+` for standard net/http requests supporting http/3 using quic-go`)
 
 	runCmd.Flags().StringVar(&jwtKID, argJWTKid, "", "JWT KID")

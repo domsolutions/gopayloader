@@ -7,13 +7,14 @@ import (
 	"github.com/domsolutions/gopayloader/pkgs/http-clients/nethttp"
 	"os"
 	"strings"
+	"sync"
 )
 
 const (
 	HttpClientNetHTTP   = "nethttp"
-	HttpClientNetHTTP3  = "nethttp-3"
-	HttpClientFastHTTP1 = "fasthttp-1"
-	HttpClientFastHTTP2 = "fasthttp-2"
+	HttpClientNetHTTP2  = "nethttp2"
+	HttpClientNetHTTP3  = "nethttp3"
+	HttpClientFastHTTP1 = "fasthttp"
 )
 
 type TotalRequestsComplete int64
@@ -23,43 +24,37 @@ type ResponseCode int
 type Stats struct {
 	CompletedReqs int64
 	FailedReqs    int64
-	Responses     map[ResponseCode]int64
-	Errors        map[string]uint
+	Responses     *sync.Map
+	Errors        *sync.Map
 }
 
 func NewWorker(config *http_clients.Config) (Worker, error) {
-	client, err := getClient(config)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := client.NewResponse()
-	req, err := getReq(client, config)
+	client, err := http(config)
 	if err != nil {
 		return nil, err
 	}
 
 	if config.ReqLimitedOnly() {
 		if config.JwtStreamReceiver != nil {
-			w := &WorkerFixedReqs{baseConfig(config, client, req, resp)}
+			w := &WorkerFixedReqs{baseConfig(config, client)}
 			w.middleware = jwtMiddleware
 			return w, nil
 		}
-		return &WorkerFixedReqs{baseConfig(config, client, req, resp)}, nil
+		return &WorkerFixedReqs{baseConfig(config, client)}, nil
 	}
 
 	if config.UnlimitedReqs() {
-		return &WorkerFixedTime{baseConfig(config, client, req, resp)}, nil
+		return &WorkerFixedTime{baseConfig(config, client)}, nil
 	}
 
-	w := &WorkerFixedTimeRequests{baseConfig(config, client, req, resp)}
+	w := &WorkerFixedTimeRequests{baseConfig(config, client)}
 	if config.JwtStreamReceiver != nil {
 		w.middleware = jwtMiddleware
 	}
 	return w, nil
 }
 
-func getReq(client http_clients.GoPayLoaderClient, config *http_clients.Config) (http_clients.Request, error) {
+func newReq(client http_clients.GoPayLoaderClient, config *http_clients.Config) (http_clients.Request, error) {
 	req, err := client.NewReq(config.Method, config.ReqURI)
 	if err != nil {
 		return nil, err
@@ -86,40 +81,45 @@ func getReq(client http_clients.GoPayLoaderClient, config *http_clients.Config) 
 		}
 		req.SetBody(bb)
 	}
+
 	return req, nil
 }
 
-func jwtMiddleware(w *WorkerBase) {
+func jwtMiddleware(w *WorkerBase, req http_clients.Request) {
 	select {
 	case jwt := <-w.config.JwtStreamReceiver:
-		w.req.SetHeader(w.config.JWTHeader, jwt)
+		req.SetHeader(w.config.JWTHeader, jwt)
 	}
 }
 
-func baseConfig(config *http_clients.Config, client http_clients.GoPayLoaderClient, req http_clients.Request, resp http_clients.Response) *WorkerBase {
+func baseConfig(config *http_clients.Config, client http_clients.GoPayLoaderClient) *WorkerBase {
 	return &WorkerBase{
-		config:   config,
-		req:      req,
-		resp:     resp,
-		client:   client,
-		reqStats: config.ReqStats,
+		config:     config,
+		client:     client,
+		parallel:   config.Parallel,
+		parallelWg: &sync.WaitGroup{},
+		reqStats:   config.ReqStats,
+		method:     config.Method,
+		url:        config.ReqURI,
 		stats: Stats{
-			Responses: make(map[ResponseCode]int64),
-			Errors:    make(map[string]uint),
+			Responses: &sync.Map{},
+			Errors:    &sync.Map{},
 		},
+		statsSuccessLock: &sync.Mutex{},
+		statsErrorLock:   &sync.Mutex{},
 	}
 }
 
-func getClient(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
+func http(config *http_clients.Config) (http_clients.GoPayLoaderClient, error) {
 	switch config.Client {
 	case HttpClientNetHTTP:
 		return nethttp.GetNetHTTPClient(config)
+	case HttpClientNetHTTP2:
+		return nethttp.GetNetHTTP2Client(config)
 	case HttpClientNetHTTP3:
 		return nethttp.GetNetHTTP3Client(config)
 	case HttpClientFastHTTP1:
 		return fasthttp.GetFastHTTPClient1(config)
-	case HttpClientFastHTTP2:
-		return fasthttp.GetFastHTTPClient2(config)
 	}
 	return nil, fmt.Errorf("client %s not recognised", config.Client)
 }

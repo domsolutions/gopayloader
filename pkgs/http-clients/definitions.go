@@ -23,6 +23,7 @@ type GoPayLoaderClient interface {
 	NewReq(method, url string) (Request, error)
 	NewResponse() Response
 	CloseConns()
+	HTTP2() bool
 }
 
 type Config struct {
@@ -49,6 +50,7 @@ type Config struct {
 	HTTPV3            bool
 	ReqStats          chan<- time.Duration
 	Client            string
+	Parallel          bool
 }
 
 func (c *Config) ReqLimitedOnly() bool {
