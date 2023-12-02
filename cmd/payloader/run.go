@@ -109,7 +109,7 @@ func init() {
 	runCmd.Flags().Int64VarP(&reqs, argRequests, "r", 0, "Number of requests")
 	runCmd.Flags().UintVarP(&conns, argConnections, "c", 1, "Number of simultaneous connections")
 	runCmd.Flags().BoolVarP(&disableKeepAlive, argKeepAlive, "k", false, "Disable keep-alive connections")
-	runCmd.Flags().BoolVar(&parallel, argParallel, false, "Sends reqs in parallel per connection with HTTP/2")
+	runCmd.Flags().BoolVar(&parallel, argParallel, false, "Sends reqs in parallel per connection with HTTP/2 or HTTP/3")
 
 	runCmd.Flags().BoolVar(&skipVerify, argVerifySigner, false, "Skip verify SSL cert signer")
 	runCmd.Flags().DurationVarP(&duration, argTime, "t", 0, "Execution time window, if used with -r will uniformly distribute reqs within time window, without -r reqs are unlimited")

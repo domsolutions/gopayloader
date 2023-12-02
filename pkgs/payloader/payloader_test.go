@@ -217,13 +217,13 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 			}},
 		},
 		{
-			name: "PUT 10 connections for 10 second long test with 100 requests",
+			name: "PUT 10 connections for 5 second long test with 100 requests",
 			fields: fields{config: &config.Config{
 				Ctx:           context.Background(),
 				ReqURI:        addr,
 				Conns:         10,
 				ReqTarget:     100,
-				Duration:      10 * time.Second,
+				Duration:      5 * time.Second,
 				ReadTimeout:   5 * time.Second,
 				WriteTimeout:  5 * time.Second,
 				Method:        "PUT",
@@ -432,7 +432,7 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 		},
 	}
 
-	if client == "nethttp2" {
+	if client == "nethttp2" || client == "nethttp3" {
 		tests = append(tests, tcase{
 			name: "PARALLEL - GET 10 connections for 210 requests",
 			fields: fields{config: &config.Config{
@@ -464,6 +464,7 @@ func testPayLoader_Run(t *testing.T, addr, client string, cleanup func()) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewPayLoader(tt.fields.config)
 			got, err := p.Run()
