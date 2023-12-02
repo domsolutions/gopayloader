@@ -94,7 +94,7 @@ Flags:
   -m, --method string            request method (default "GET")
       --mtls-cert string         mTLS cert path
       --mtls-key string          mTLS cert private key path
-      --parallel                 Sends reqs in parallel per connection with HTTP/2
+      --parallel                 Sends reqs in parallel per connection with HTTP/2 or HTTP/3
       --read-timeout duration    Read timeout (default 5s)
   -r, --requests int             Number of requests
       --skip-verify              Skip verify SSL cert signer

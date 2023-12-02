@@ -14,34 +14,34 @@ import (
 )
 
 type Config struct {
-	Ctx                  context.Context
-	ReqURI               string
-	DisableKeepAlive     bool
-	ReqTarget            int64
-	Conns                uint
-	Duration             time.Duration
-	MTLSKey              string
-	MTLSCert             string
-	SkipVerify           bool
-	ReadTimeout          time.Duration
-	WriteTimeout         time.Duration
-	Method               string
-	Verbose              bool
-	VerboseTicker        time.Duration
-	JwtKID               string
-	JwtKey               string
-	JwtSub               string
-	JwtCustomClaimsJSON  string
-	JwtIss               string
-	JwtAud               string
-	JwtHeader            string
-	JwtsFilename         string
-	SendJWT              bool
-	Headers              []string
-	Body                 string
-	BodyFile             string
-	Client               string
-	Parallel             bool
+	Ctx                 context.Context
+	ReqURI              string
+	DisableKeepAlive    bool
+	ReqTarget           int64
+	Conns               uint
+	Duration            time.Duration
+	MTLSKey             string
+	MTLSCert            string
+	SkipVerify          bool
+	ReadTimeout         time.Duration
+	WriteTimeout        time.Duration
+	Method              string
+	Verbose             bool
+	VerboseTicker       time.Duration
+	JwtKID              string
+	JwtKey              string
+	JwtSub              string
+	JwtCustomClaimsJSON string
+	JwtIss              string
+	JwtAud              string
+	JwtHeader           string
+	JwtsFilename        string
+	SendJWT             bool
+	Headers             []string
+	Body                string
+	BodyFile            string
+	Client              string
+	Parallel            bool
 }
 
 func NewConfig(ctx context.Context, reqURI, mTLScert, mTLSKey string, disableKeepAlive bool, reqs int64, conns uint, totalTime time.Duration, skipVerify bool, readTimeout, writeTimeout time.Duration, method string, verbose bool, ticker time.Duration, jwtKID, jwtKey, jwtSub, jwtCustomClaimsJSON, jwtIss, jwtAud, jwtHeader, jwtsFilename string, headers []string, body, bodyFile string, client string, parallel bool) *Config {
@@ -145,7 +145,7 @@ func (c *Config) Validate() error {
 	}
 
 	// Require JwtHeader if JwtKey or JwtsFilename is present
-  if (c.JwtsFilename != "" || c.JwtKey != "") && c.JwtHeader == "" {
+	if (c.JwtsFilename != "" || c.JwtKey != "") && c.JwtHeader == "" {
 		return errors.New("config: empty jwt header")
 	}
 
@@ -200,8 +200,8 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.Parallel && c.Client != worker.HttpClientNetHTTP2 {
-		return fmt.Errorf("can only run parallel with %s client", worker.HttpClientNetHTTP2)
+	if c.Parallel && (c.Client != worker.HttpClientNetHTTP2 && c.Client != worker.HttpClientNetHTTP3) {
+		return fmt.Errorf("can only run parallel with %s or %s client", worker.HttpClientNetHTTP2, worker.HttpClientNetHTTP3)
 	}
 
 	if c.VerboseTicker == 0 {
