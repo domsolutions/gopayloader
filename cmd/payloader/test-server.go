@@ -85,6 +85,13 @@ var runServerCmd = &cobra.Command{
 			var err error
 
 			server := fasthttp.Server{
+				ConnState: func(c net.Conn, s fasthttp.ConnState) {
+					if debug {
+						if s == fasthttp.StateNew {
+							log.Println("new conn")
+						}
+					}
+				},
 				Handler: func(c *fasthttp.RequestCtx) {
 					_, err = c.WriteString(response)
 					if err != nil {
