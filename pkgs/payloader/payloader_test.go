@@ -11,6 +11,7 @@ import (
 	"github.com/valyala/fasthttp"
 	golanghttp2 "golang.org/x/net/http2"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -67,6 +68,20 @@ func tlsConfig() *tls.Config {
 func testStartHTTP1Server(addr string) {
 	var err error
 	testFastHTTP = fasthttp.Server{
+		ErrorHandler: func(ctx *fasthttp.RequestCtx, err error) {
+			log.Printf("Got error from req %+v", ctx)
+			log.Println(err)
+		},
+		ConnState: func(conn net.Conn, state fasthttp.ConnState) {
+			switch state {
+			case fasthttp.StateNew:
+				log.Printf("New conn from %s \n", conn.RemoteAddr().String())
+			case fasthttp.StateClosed:
+				log.Printf("Closed conn from %s \n", conn.RemoteAddr().String())
+			case fasthttp.StateIdle:
+				log.Printf("Idle conn from %s \n", conn.RemoteAddr().String())
+			}
+		},
 		Handler: func(c *fasthttp.RequestCtx) {
 			_, err = c.WriteString("hello")
 			if err != nil {
@@ -128,9 +143,7 @@ func testStartHTTP2Server(addr string) {
 }
 
 func TestPayLoader_RunFastHTTP1NonSSL(t *testing.T) {
-	testPayLoader_Run(t, "http://localhost:8888", "fasthttp", func() {
-		testFastHTTP.Shutdown()
-	})
+	testPayLoader_Run(t, "http://localhost:8888", "fasthttp", nil)
 }
 
 func TestPayLoader_RunFastHTTP1SSL(t *testing.T) {
