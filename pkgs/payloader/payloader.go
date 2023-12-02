@@ -295,8 +295,8 @@ func (p *PayLoader) displayProgress(ctx context.Context, workers []worker.Worker
 
 			for _, w := range workers {
 				stats = w.Stats()
-				errs += stats.FailedReqs.Load()
-				success += stats.CompletedReqs.Load()
+				errs += stats.FailedReqs
+				success += stats.CompletedReqs
 			}
 
 			displayStats.Update(

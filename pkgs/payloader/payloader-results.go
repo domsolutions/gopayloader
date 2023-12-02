@@ -17,8 +17,8 @@ func (p *PayLoader) ComputeResults(workers []worker.Worker, results *GoPayloader
 
 	for _, w := range workers {
 		stats := w.Stats()
-		results.CompletedReqs += stats.CompletedReqs.Load()
-		results.FailedReqs += stats.FailedReqs.Load()
+		results.CompletedReqs += stats.CompletedReqs
+		results.FailedReqs += stats.FailedReqs
 
 		stats.Errors.Range(func(key, value any) bool {
 			results.Errors[key.(string)] += value.(uint64)

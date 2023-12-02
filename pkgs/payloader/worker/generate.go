@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 )
 
 const (
@@ -23,8 +22,8 @@ type TotalRequestsComplete int64
 type ResponseCode int
 
 type Stats struct {
-	CompletedReqs atomic.Int64
-	FailedReqs    atomic.Int64
+	CompletedReqs int64
+	FailedReqs    int64
 	Responses     *sync.Map
 	Errors        *sync.Map
 }

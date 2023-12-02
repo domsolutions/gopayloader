@@ -3,6 +3,7 @@ package worker
 import (
 	http_clients "github.com/domsolutions/gopayloader/pkgs/http-clients"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -27,6 +28,8 @@ type WorkerBase struct {
 	reqSize          int64
 	respSize         int64
 	parallelWg       *sync.WaitGroup
+	CompletedReqs    atomic.Int64
+	FailedReqs       atomic.Int64
 }
 
 func (w *WorkerBase) ReqSize() int64 {
@@ -48,7 +51,7 @@ func (w *WorkerBase) updateErrStats(err error) {
 		w.stats.Errors.Store(err.Error(), uint64(1))
 	}
 
-	w.stats.FailedReqs.Add(1)
+	w.FailedReqs.Add(1)
 }
 
 func (w *WorkerBase) run() {
@@ -117,7 +120,7 @@ func (w *WorkerBase) updateRespStats(req http_clients.Request, resp http_clients
 		w.respSize = resp.Size()
 	}
 
-	w.stats.CompletedReqs.Add(1)
+	w.CompletedReqs.Add(1)
 
 	val, ok := w.stats.Responses.Load(ResponseCode(resp.StatusCode()))
 	if ok {
@@ -129,5 +132,7 @@ func (w *WorkerBase) updateRespStats(req http_clients.Request, resp http_clients
 }
 
 func (w *WorkerBase) Stats() Stats {
+	w.stats.FailedReqs = w.FailedReqs.Load()
+	w.stats.CompletedReqs = w.CompletedReqs.Load()
 	return w.stats
 }
