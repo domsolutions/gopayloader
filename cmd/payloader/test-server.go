@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/valyala/fasthttp"
 	golanghttp2 "golang.org/x/net/http2"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -31,6 +32,7 @@ var (
 	nethttp2     bool
 	httpv3       bool
 	debug        bool
+	debugbody    bool
 )
 
 var (
@@ -85,6 +87,7 @@ var runServerCmd = &cobra.Command{
 			var err error
 
 			server := fasthttp.Server{
+				MaxRequestBodySize: 99000 * 1024 * 1024,
 				ConnState: func(c net.Conn, s fasthttp.ConnState) {
 					if debug {
 						if s == fasthttp.StateNew {
@@ -99,6 +102,8 @@ var runServerCmd = &cobra.Command{
 					}
 					if debug {
 						log.Printf("%s\n", c.Request.Header.String())
+					}
+					if debugbody {
 						log.Printf("%s\n", c.Request.Body())
 					}
 				},
@@ -181,8 +186,8 @@ var runServerCmd = &cobra.Command{
 		if nethttp2 {
 			server := &http.Server{
 				Addr:         addr,
-				ReadTimeout:  10 * time.Second,
-				WriteTimeout: 10 * time.Second,
+				ReadTimeout:  10 * time.Minute,
+				WriteTimeout: 10 * time.Minute,
 				TLSConfig:    tlsConfig(),
 				ConnState: func(c net.Conn, s http.ConnState) {
 					if !debug {
@@ -208,6 +213,22 @@ var runServerCmd = &cobra.Command{
 				if debug {
 					log.Printf("%+v\n", r.Header)
 					log.Printf("%+v\n", r.Body)
+
+					b := make([]byte, 1024*1024)
+					count := 0
+					for {
+						i, err := r.Body.Read(b)
+						count += i
+						if err != nil {
+							if err == io.EOF {
+								log.Printf("body size %d", count)
+								break
+							}
+							log.Println(err)
+							break
+						}
+					}
+
 				}
 			})
 
@@ -278,6 +299,7 @@ func init() {
 	runServerCmd.Flags().BoolVar(&nethttp2, "netHTTP-2", false, "net/http HTTP/2 server")
 	runServerCmd.Flags().BoolVar(&httpv3, "http-3", false, "HTTP/3 server")
 	runServerCmd.Flags().BoolVarP(&debug, "verbose", "v", false, "print logs")
+	runServerCmd.Flags().BoolVar(&debugbody, "veryverbose", false, "print logs")
 	rootCmd.AddCommand(runServerCmd)
 }
 
