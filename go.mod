@@ -6,7 +6,7 @@ require (
 	github.com/domsolutions/http2 v0.4.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/jedib0t/go-pretty/v6 v6.5.3
+	github.com/jedib0t/go-pretty/v6 v6.5.6
 	github.com/pterm/pterm v0.12.76
 	github.com/quic-go/quic-go v0.41.0
 	github.com/spf13/cobra v1.8.0
