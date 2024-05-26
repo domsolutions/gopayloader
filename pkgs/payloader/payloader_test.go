@@ -105,7 +105,7 @@ func testStartHTTP3Server(addr string) {
 			}
 		}),
 		Addr: addr,
-		QuicConfig: &quic.Config{
+		QUICConfig: &quic.Config{
 			EnableDatagrams: true,
 		},
 		TLSConfig: tlsConfig(),
