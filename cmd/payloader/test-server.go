@@ -278,7 +278,7 @@ var runServerCmd = &cobra.Command{
 					}
 				}),
 				Addr:       addr,
-				QuicConfig: quicConf,
+				QUICConfig: quicConf,
 				TLSConfig:  tlsConfigServer,
 			}
 
