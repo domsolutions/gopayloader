@@ -10,7 +10,7 @@ require (
 	github.com/pterm/pterm v0.12.76
 	github.com/quic-go/quic-go v0.44.0
 	github.com/spf13/cobra v1.8.0
-	github.com/valyala/fasthttp v1.52.0
+	github.com/valyala/fasthttp v1.54.0
 	golang.org/x/net v0.25.0
 	golang.org/x/text v0.15.0
 )
@@ -25,7 +25,7 @@ require (
 	github.com/google/pprof v0.0.0-20230602150820-91b7bce49751 // indirect
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/klauspost/compress v1.17.6 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/onsi/ginkgo/v2 v2.11.0 // indirect
