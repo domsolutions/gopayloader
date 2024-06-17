@@ -9,7 +9,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/pterm/pterm v0.12.76
 	github.com/quic-go/quic-go v0.45.0
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/valyala/fasthttp v1.55.0
 	golang.org/x/net v0.26.0
 	golang.org/x/text v0.16.0
