@@ -75,11 +75,11 @@ func testStartHTTP1Server(addr string) {
 		ConnState: func(conn net.Conn, state fasthttp.ConnState) {
 			switch state {
 			case fasthttp.StateNew:
-				log.Printf("New conn from %s \n", conn.RemoteAddr().String())
+				//log.Printf("New conn from %s \n", conn.RemoteAddr().String())
 			case fasthttp.StateClosed:
-				log.Printf("Closed conn from %s \n", conn.RemoteAddr().String())
+				//log.Printf("Closed conn from %s \n", conn.RemoteAddr().String())
 			case fasthttp.StateIdle:
-				log.Printf("Idle conn from %s \n", conn.RemoteAddr().String())
+				//log.Printf("Idle conn from %s \n", conn.RemoteAddr().String())
 			}
 		},
 		Handler: func(c *fasthttp.RequestCtx) {
