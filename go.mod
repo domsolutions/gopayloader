@@ -10,7 +10,7 @@ require (
 	github.com/pterm/pterm v0.12.79
 	github.com/quic-go/quic-go v0.47.0
 	github.com/spf13/cobra v1.8.1
-	github.com/valyala/fasthttp v1.55.0
+	github.com/valyala/fasthttp v1.56.0
 	golang.org/x/net v0.29.0
 	golang.org/x/text v0.18.0
 )
