@@ -30,7 +30,7 @@ Contributions are welcome, please read the guidelines [here.](./CONTRIBUTING.md)
 
 ## Installation
 
-Can install with (supported go versions >= `1.22`)
+Can install with (supported go versions >= `1.23`)
 
 ```shell
 go install github.com/domsolutions/gopayloader@latest 
