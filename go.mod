@@ -11,8 +11,8 @@ require (
 	github.com/quic-go/quic-go v0.47.0
 	github.com/spf13/cobra v1.8.1
 	github.com/valyala/fasthttp v1.55.0
-	golang.org/x/net v0.29.0
-	golang.org/x/text v0.19.0
+	golang.org/x/net v0.31.0
+	golang.org/x/text v0.20.0
 )
 
 require (
@@ -36,10 +36,10 @@ require (
 	github.com/valyala/fastrand v1.1.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.uber.org/mock v0.4.0 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
+	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/term v0.24.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/term v0.26.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 )
