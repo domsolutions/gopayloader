@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/pterm/pterm v0.12.79
-	github.com/quic-go/quic-go v0.47.0
+	github.com/quic-go/quic-go v0.48.2
 	github.com/spf13/cobra v1.8.1
 	github.com/valyala/fasthttp v1.55.0
 	golang.org/x/net v0.29.0
