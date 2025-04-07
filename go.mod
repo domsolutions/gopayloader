@@ -1,6 +1,7 @@
 module github.com/domsolutions/gopayloader
 
 go 1.23
+toolchain go1.24.1
 
 require (
 	github.com/domsolutions/http2 v0.4.0
@@ -12,7 +13,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/valyala/fasthttp v1.55.0
 	golang.org/x/net v0.29.0
-	golang.org/x/text v0.19.0
+	golang.org/x/text v0.24.0
 )
 
 require (
@@ -39,7 +40,7 @@ require (
 	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.18.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/term v0.24.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
